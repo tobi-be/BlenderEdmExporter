@@ -1,6 +1,12 @@
 **BLENDER EDM EXPORTER**
 ========================
+
 I have used much of the knowledge provided by NickD. ( https://ndevenish.github.io/Blender_ioEDM/ )He made the difficult start decrypting the EDM files and thus laid the foundation and understanding for developing such addons. Also madwax (https://github.com/madwax/Blender_ioEDM ) who continued the work and kept NickD’s addon running with the DCS updates. I decided to begin from scratch for an exporter for blender 2.8 because things have changed in blender and I wanted to take a slightly different approach to some things. (use of armature) 
+
+Releases:
+
+https://github.com/tobi-be/BlenderEdmExporter/releases
+
 
 What should work:
 ------------------
