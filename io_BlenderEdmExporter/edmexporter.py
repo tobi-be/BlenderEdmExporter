@@ -1225,12 +1225,12 @@ def createEDMModel():
         if not action.exportToEDM:
             continue
         		
-        print("Action: "+action.name)
+        #print("Action: "+action.name)
         tMin,tMax=action.frame_range
         b=2.0/(tMax-tMin)
         a=-tMin*b-1.0
-        print(tMin)
-        print(tMax)
+        #print(tMin)
+        #print(tMax)
         animatedbones={}
         for fcu in action.fcurves:
             type,name,prop=parseAnimationPath(fcu)
