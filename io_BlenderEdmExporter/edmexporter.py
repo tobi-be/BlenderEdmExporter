@@ -499,27 +499,19 @@ class VisibilityNode:
         tMin,tMax=fcu.range()
         b=2.0/(tMax-tMin)
         a=-tMin*b-1.0
-        print("addCurve")
-        print(tMin)
-        print(tMax)
         for i in fcu.keyframe_points:
-            print(i.co.x)
-            print(i.co.y)
             if i.co.y==0:
                 if not on:
                     framestart=a+b*i.co.x
-                print(framestart)
                 on=True
             if i.co.y==1:
                 if on:
-                    frameend=a+b*i.co.x
-                    print(frameend)					
+                    frameend=a+b*i.co.x					
                     self.addKey(argument,framestart,frameend)
                 on=False
         if on:
             self.addKey(argument,framestart,1000000.0)		
     def write(self,file):
-        print("Schreibe Vis")	
         writeNodeBase(file,self)
         writeUInt(file,len(self.data))
         for argument, v in self.data.items():
@@ -1202,7 +1194,7 @@ def createEDMModel():
                 v.addFCurve(argument,fcu)
                 if argument+1>=actionindex:
                     actionindex=argument+1
-                print(actionindex)
+                #print(actionindex)
                 edmmodel.nodes.append(v)
                 nodeindex+=1
                 boneid[c.name+"visibility"]=nodeindex
