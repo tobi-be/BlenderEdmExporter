@@ -33,6 +33,9 @@ class EDMObjectPanel(bpy.types.Panel):
                     col.label(text="Diffuse colormap:")
                     col.prop(material,'EDMDiffuseMapName')
                     col.prop(material,'EDMDiffuseValue')
+                    if material.EDMMaterialType=='Solid':
+                        col.prop(material,'EDMUseAlpha')
+
                     #col.prop(material,'EDMDiffuseShift')
                     #materialBox.separator()
                     col = materialBox.column(align = True)

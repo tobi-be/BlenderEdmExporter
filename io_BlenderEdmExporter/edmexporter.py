@@ -91,7 +91,7 @@ def writePropertySet(file,properties):
         
 def writeStringLookUp(file):
     N=0
-    for s in stringLookUp:
+    for s in stringLookUp: 
         N+=len(s)+1
     writeUInt(file,N)
     for s in stringLookUp:
@@ -272,7 +272,10 @@ class EDMMaterial:
         if material.EDMMaterialType=='Solid':
             self.materialName="def_material"
             self.VertexFormat[1]=3 #normals
-            self.Blending=0 #char 
+            if material.EDMUseAlpha:
+                self.Blending=2 #char 
+            else:
+                self.Blending=0
             if material.EDMUseSpecularMap:
                 self.textures.append(EDMTexture(2,material.EDMSpecularMapName))
                 self.uniforms.append(EDMProperty("specMapValue", "model::Property<float>" ,material.EDMSpecularMapValue))
@@ -543,11 +546,13 @@ class BoneNode:
         writeMatrixd(file,self.matrix_inv)
     
 class EDMVertex:
-    def __init__(self,vert,uv,tangent,bitangent):
+    def __init__(self,vert,uv,normal,tangent,bitangent):
         self.co=vert.co
-        self.normal=vert.normal
-        self.tangent=mathutils.Vector([0.0,0.0,0.0])
-        self.bitangent=mathutils.Vector([0.0,0.0,0.0])
+        self.normal=normal
+        #self.tangent=mathutils.Vector([0.0,0.0,0.0])
+        self.tangent=tangent
+        #self.bitangent=mathutils.Vector([0.0,0.0,0.0])
+        self.bitangent=bitangent
         self.groups=[0,0,0,0]#groups angucken
         self.weights=[0.0,0.0,0.0,0.0]# auch angucken
         if len(vert.groups)>4:
@@ -590,7 +595,7 @@ def createMesh(me, simple):
             if found==False:
                 ivert=len(newverts)
                 vlist[id].append(ivert)
-                newverts.append(EDMVertex(me.vertices[id],mathutils.Vector([0,0]),mathutils.Vector([0,0,0]),mathutils.Vector([0,0,0])))
+                newverts.append(EDMVertex(me.vertices[id],mathutils.Vector([0,0]),mathutils.Vector([0,0,0]),mathutils.Vector([0,0,0]),mathutils.Vector([0,0,0])))
             tri.append(ivert)
         return tri		
     def addTri(vertIDs):
@@ -599,18 +604,19 @@ def createMesh(me, simple):
             id=me.loops[loop_index].vertex_index #ursprünglicher vertex
             tangent=me.loops[loop_index].tangent
             bitangent=me.loops[loop_index].bitangent
+            normal=me.loops[loop_index].normal
             uv=mathutils.Vector([uv_layer[loop_index].uv[0],1.0-uv_layer[loop_index].uv[1]]) #uv
             found=False
             ivert=0
             for i in vlist[id]:
                 #should look also at normals to use smoothinggroups?
-                if newverts[i].uv==uv:
+                if newverts[i].uv==uv and newverts[i].normal==normal:
                     ivert=i
                     found=True
             if found==False:
                 ivert=len(newverts)
                 vlist[id].append(ivert)
-                newverts.append(EDMVertex(me.vertices[id],uv,tangent,bitangent))
+                newverts.append(EDMVertex(me.vertices[id],uv,normal,tangent,bitangent))
             tri.append(ivert)
         return tri
     for poly in me.polygons:
@@ -628,6 +634,7 @@ def createMesh(me, simple):
             tris.append(tri)
     if not simple:
         me.free_tangents()
+    print(len(newverts))		
     return newverts,tris
     
 def writeMesh(file,verts,tris,normals,tangents,uvs,groups,weights):

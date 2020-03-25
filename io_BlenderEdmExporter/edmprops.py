@@ -53,6 +53,9 @@ class BlenderEDMOptions(bpy.types.PropertyGroup):
     bpy.types.Material.EDMUseDiffuseMap=bpy.props.BoolProperty(
         name="Use diffuse map",
         default = True)
+    bpy.types.Material.EDMUseAlpha=bpy.props.BoolProperty(
+        name="Use alpha channel",
+        default = False)		
     bpy.types.Material.EDMDiffuseMapName=bpy.props.StringProperty(
         name="filename",
         default="texture")
