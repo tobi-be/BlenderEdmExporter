@@ -7,6 +7,12 @@ Releases:
 
 https://github.com/tobi-be/BlenderEdmExporter/releases
 
+Install:
+--------
+
+- Download io_BlenderEdmExporter.zip from asserts of the latest release. 
+- Blender: Go to Edit->Preferences->Add-Ons, press install and choose downloaded zip file 
+- Activate the add-on
 
 What should work:
 ------------------
