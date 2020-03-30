@@ -2,6 +2,7 @@ import bpy
 import struct
 import mathutils
 import tempfile
+import bmesh
 from math import radians
 
 
@@ -576,10 +577,12 @@ def createMesh(me, simple):
     newverts=[]
     tris=[]
     me.calc_normals()
-    if not simple:		
+	
+    if not simple:	
+        print("Length UV layer: " +str(len(me.uv_layers)))
         uv_layer = me.uv_layers[0].data
         me.calc_tangents(uvmap=me.uv_layers[0].name)
-        me.update(calc_edges=True, calc_edges_loose=True)
+        #me.update(calc_edges=True, calc_edges_loose=True)
     vlist=[]
     for v in me.vertices:
         vlist.append([])
@@ -720,7 +723,25 @@ class RenderNode:
     giBytes=0
     gvBytes=0
     def __init__(self,obj):
-        mesh=obj.data
+        #print(obj.is_modified())	
+        #depsgraph = bpy.context.evaluated_depsgraph_get()
+        #bm = bmesh.new()
+        
+        #if True:
+        #    ob_eval = obj.evaluated_get(depsgraph)
+        #else:
+        #    ob_eval = obj
+        
+        #me = ob_eval.to_mesh()
+                
+        #me.transform(ob.matrix_world)
+        #bm.from_mesh(me)
+        #ob_eval.to_mesh_clear()
+        
+        #mesh = bpy.data.meshes.new("TMPEDMEXPORT")
+        #bm.to_mesh(mesh)
+        #bm.free()
+        mesh = obj.data
         self.name=obj.name
         self.type="model::RenderNode"
         self.PropertySet=[]
@@ -729,6 +750,7 @@ class RenderNode:
         self.parentData=0 
         self.parentDataDamageArg=-1 
         verts,tris=createMesh(mesh,False)
+        #bpy.data.meshes.remove(mesh)
         self.verts=verts
         self.tris=tris
         if len(obj.material_slots)>0:
@@ -1071,8 +1093,9 @@ def meshIsOk(obj):
 
 def createEDMModel():
     resetData()
-    layer = bpy.context.view_layer
-    layer.update()
+    #layer = bpy.context.view_layer
+    
+    #layer.update()
     if len(bpy.data.armatures) !=1:
         print("Use one and only one armature! Not writing")
         return None
@@ -1152,6 +1175,10 @@ def createEDMModel():
         if c.type=='EMPTY':
             type=c.EDMEmptyType
         if c.type=='MESH':
+            #c.to_mesh(preserve_all_data_layers=True, depsgraph=None)
+            #c.update_from_editmode()
+            #c.data.validate(verbose=True, clean_customdata=False)			
+            
             type=c.EDMRenderType
         if type=='RenderNode':
             if hasMaterial(c) and meshIsOk(c):	
@@ -1303,4 +1330,14 @@ def createEDMModel():
         
     edmmodel.rootNode.NAnimationArgs=actionindex+1    
     return edmmodel
+    
+def prepareObjects():
+    for c in bpy.data.objects:
+        if c.type=='MESH':
+            if len(c.data.uv_layers)>0:		
+                uv_layer = c.data.uv_layers[0].data
+                c.data.calc_normals()			
+                c.data.calc_tangents(uvmap=c.data.uv_layers[0].name)
+                c.data.free_tangents()
+    bpy.context.view_layer.update()			
     
