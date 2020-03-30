@@ -1,6 +1,6 @@
 bl_info = {
     "name": "EDM-Exporter",
-    "blender": (2, 80, 0),
+    "blender": (2, 82, 0),
     "category": "Import-Export",
 	"author": "Tobias Berkefeld"
 }
