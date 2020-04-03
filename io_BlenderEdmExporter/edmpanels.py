@@ -72,6 +72,14 @@ class EDMObjectPanel(bpy.types.Panel):
                 box.prop(bpy.context.object,'FakeLightUV1')
                 box.prop(bpy.context.object,'FakeLightUV2')
                 box.prop(bpy.context.object,'FakeLightShift')
+            if bpy.context.object.EDMEmptyType=='Light':
+                box.prop(bpy.context.object,'EDMLightColor')
+                box.prop(bpy.context.object,'EDMLightBrightness')
+                box.prop(bpy.context.object,'EDMLightDistance')
+                box.prop(bpy.context.object,'EDMisSpot')
+                if bpy.context.object.EDMisSpot:
+                    box.prop(bpy.context.object,'EDMLightPhi')
+                    box.prop(bpy.context.object,'EDMLightTheta')    
                 
                 
             

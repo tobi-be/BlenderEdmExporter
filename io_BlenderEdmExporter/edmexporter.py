@@ -384,6 +384,36 @@ class ConnectorNode:
         writeNodeBase(file,self)
         writeUInt(file,self.parentData)
         writeUInt(file,self.unknown)
+
+class EDMLight:
+    def __init__(self,obj):
+        self.name=obj.name
+        self.type="model::LightNode"
+        self.PropertySet=[]
+        self.LightPropertySet=[]
+        self.parentData=0
+        self.Color=obj.EDMLightColor 
+        self.Brightness=obj.EDMLightBrightness
+        self.Distance=obj.EDMLightDistance
+        self.isSpot=0
+        self.PropertySet.append(EDMProperty("__VERSION__","model::Property<unsigned int>",1))
+        self.LightPropertySet.append(EDMProperty("Color","model::Property<osg::Vec3f>",self.Color))
+        self.LightPropertySet.append(EDMProperty("Brightness","model::Property<float>",self.Brightness))
+        if obj.EDMisSpot:
+            self.isSpot=1
+            self.LightPropertySet.append(EDMProperty("Phi","model::Property<float>",obj.EDMLightPhi))
+            self.LightPropertySet.append(EDMProperty("Theta","model::Property<float>",obj.EDMLightTheta))
+        else:
+            self.LightPropertySet.append(EDMProperty("","model::Property<float>",0))
+            self.LightPropertySet.append(EDMProperty("","model::Property<float>",0))
+        self.LightPropertySet.append(EDMProperty("Distance","model::Property<float>",self.Distance))
+        print(len(self.LightPropertySet))
+    def write(self,file):
+        writeNodeBase(file,self)
+        writeUInt(file,self.parentData)
+        writeUChar(file,self.isSpot)
+        writePropertySet(file,self.LightPropertySet)
+        writeUChar(file,0)    
                 
 class EDMNode:
     N=0
@@ -841,7 +871,7 @@ class ShellNode:
             writeUChar(file,self.VertexFormat[i])
         writeMesh(file,self.verts,self.tris,False,False,False,False,False)
         #writeMesh(file,verts,tris,normals,tangents,uvs,groups,weights):
-         
+
 class EDMModel:
     def __init__(self):
         self.nodes=[]
@@ -988,7 +1018,7 @@ def getOffsetTransform(a,b, shift):
     if shift:
         mat=a.matrix_local	
         transpose=mat.col[3]
-        mat=(mathutils.Matrix.Rotation(-radians(90.0), 4, 'Z') @mathutils.Matrix.Rotation(-radians(90.0), 4, 'Y')).inverted()@mat
+        mat=mat@(mathutils.Matrix.Rotation(-radians(90.0), 4, 'Z') @mathutils.Matrix.Rotation(-radians(90.0), 4, 'Y')).inverted()
         mat.col[3]=transpose
         t.matrix = b.matrix_local.inverted() @ mat
     else:
@@ -1193,12 +1223,14 @@ def createEDMModel():
             r=ShellNode(c)
         if type=='Connector':
             r=ConnectorNode(c)
-        if type=='RenderNode' or type=='ShellNode' or type=='Connector' or type=='FakeOmniLight':            
+        if type=='Light':
+            r=EDMLight(c)
+        if type=='RenderNode' or type=='ShellNode' or type=='Connector' or type=='FakeOmniLight' or type=='Light':            
             if c.parent_bone==None:
                 print("Object is not parented")
             else:
                 if c.parent_bone in armature.data.bones:
-                    t=getOffsetTransform(c,armature.data.bones[c.parent_bone],type=='Connector')
+                    t=getOffsetTransform(c,armature.data.bones[c.parent_bone],type=='Connector' or type=='Light')
                     r.parentData=boneid[c.parent_bone]
                     if t!=None:
                         t.parentid=boneid[c.parent_bone]
@@ -1214,6 +1246,8 @@ def createEDMModel():
                         edmmodel.ShellNodes.append(r)
                     if type=='Connector':
                         edmmodel.Connectors.append(r)
+                    if type=='Light':
+                        edmmodel.LightNodes.append(r)
                 else:
                     print("Parent not found")
         if type=='SkinNode':
@@ -1334,10 +1368,16 @@ def createEDMModel():
 def prepareObjects():
     for c in bpy.data.objects:
         if c.type=='MESH':
-            if len(c.data.uv_layers)>0:		
+            calc_tan=True
+            for p in c.data.polygons:
+                if  len(p.vertices) != 4 and len(p.vertices) != 3: 
+                    calc_tan=False
+                    break					
+            if len(c.data.uv_layers)>0 and calc_tan:		
                 uv_layer = c.data.uv_layers[0].data
                 c.data.calc_normals()			
                 c.data.calc_tangents(uvmap=c.data.uv_layers[0].name)
                 c.data.free_tangents()
-    bpy.context.view_layer.update()			
+    bpy.context.view_layer.update()
+    return True	
     

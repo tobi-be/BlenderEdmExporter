@@ -12,6 +12,7 @@ class BlenderEDMOptions(bpy.types.PropertyGroup):
     bpy.types.Object.EDMEmptyType= bpy.props.EnumProperty(
         items = [('Connector', 'Connector', 'Connector'),
                 ('FakeOmniLight','FakeOmniLight','FakeOmniLight'),
+                ('Light','Light','Light'),
                 ('None', 'None','Nothing')],
         name = "EmptyType",
         default='None')        
@@ -31,6 +32,31 @@ class BlenderEDMOptions(bpy.types.PropertyGroup):
         default=(1,1),
         min=0.0,
         size=2)
+    bpy.types.Object.EDMLightColor=bpy.props.FloatVectorProperty(
+        name="Color",
+        default=(1.0,1.0,1.0),
+        min=0.0,
+        max=1.0,
+        size=3)
+    bpy.types.Object.EDMLightBrightness=bpy.props.FloatProperty(
+        name="Brightness",
+        default=(1.0),
+        min=0.0)
+    bpy.types.Object.EDMLightDistance=bpy.props.FloatProperty(
+        name="Distance",
+        default=(10.0),
+        min=0.0)
+    bpy.types.Object.EDMLightPhi=bpy.props.FloatProperty(
+        name="Phi",
+        default=(1.0),
+        min=0.0)
+    bpy.types.Object.EDMLightTheta=bpy.props.FloatProperty(
+        name="Theta",
+        default=(1.0),
+        min=0.0)
+    bpy.types.Object.EDMisSpot=bpy.props.BoolProperty(
+        name="Spotlight",
+        default=False)
     bpy.types.Object.FakeLightScale=bpy.props.FloatProperty(
         name="Scale",
         default=0.5,
