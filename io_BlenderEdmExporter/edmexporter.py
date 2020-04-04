@@ -125,14 +125,19 @@ class EDMAnimationData:
             writeVec3d(file,self.value)
 
 class EDMAnimationSet:
-    def __init__(self,argument,data):
+    def __init__(self,argument,data1,data2):
         self.argument=argument
-        self.data=data
+        self.data1=data1
+        self.data2=data2
     def write(self,file):
         writeUInt(file,self.argument)
-        writeUInt(file,len(self.data))
-        for d in self.data:
+        writeUInt(file,len(self.data1))
+        for d in self.data1:
             d.write(file)
+        if (len(self.data2)>0):
+            writeUInt(file,len(self.data2))
+            for d in self.data2:
+                d.write(file)
             
 class EDMProperty:
     NPropVec2f=0
@@ -407,7 +412,7 @@ class EDMLight:
             self.LightPropertySet.append(EDMProperty("","model::Property<float>",0))
             self.LightPropertySet.append(EDMProperty("","model::Property<float>",0))
         self.LightPropertySet.append(EDMProperty("Distance","model::Property<float>",self.Distance))
-        print(len(self.LightPropertySet))
+        #print(len(self.LightPropertySet))
     def write(self,file):
         writeNodeBase(file,self)
         writeUInt(file,self.parentData)
@@ -447,7 +452,6 @@ class ArgAnimationNode:
         self.positionAnimations=[]
         self.rotationAnimations=[]
         self.scaleAnimations=[]
-        self.scaleAnimations2=[]
         self.PropertySet=[]
         self.parentid=-1
     def write(self,file):
@@ -463,7 +467,10 @@ class ArgAnimationNode:
         writeUInt(file,len(self.rotationAnimations))
         for r in self.rotationAnimations:
             r.write(file)
-        writeUInt(file,0) #scale animations werden erstmal nicht benutzt   
+        #writeUInt(file,0) 
+        writeUInt(file,len(self.scaleAnimations)) 
+        for r in self.scaleAnimations:
+            r.write(file)
         
 class AnimatedBoneNode:
     N=0
@@ -483,7 +490,6 @@ class AnimatedBoneNode:
         self.positionAnimations=[]
         self.rotationAnimations=[]
         self.scaleAnimations=[]
-        self.scaleAnimations2=[]
         self.PropertySet=[]
         self.parentid=-1
         self.matrix_inv= obj.matrix_local.inverted()
@@ -500,7 +506,10 @@ class AnimatedBoneNode:
         writeUInt(file,len(self.rotationAnimations))
         for r in self.rotationAnimations:
             r.write(file)
-        writeUInt(file,0) #scale animations werden erstmal nicht benutzt   
+        #writeUInt(file,0) 
+        writeUInt(file,len(self.scaleAnimations)) 
+        for r in self.scaleAnimations:
+            r.write(file)
         writeMatrixd(file,self.matrix_inv)
 
 
@@ -609,7 +618,7 @@ def createMesh(me, simple):
     me.calc_normals()
 	
     if not simple:	
-        print("Length UV layer: " +str(len(me.uv_layers)))
+        #print("Length UV layer: " +str(len(me.uv_layers)))
         uv_layer = me.uv_layers[0].data
         me.calc_tangents(uvmap=me.uv_layers[0].name)
         #me.update(calc_edges=True, calc_edges_loose=True)
@@ -667,7 +676,7 @@ def createMesh(me, simple):
             tris.append(tri)
     if not simple:
         me.free_tangents()
-    print(len(newverts))		
+    #print(len(newverts))		
     return newverts,tris
     
 def writeMesh(file,verts,tris,normals,tangents,uvs,groups,weights):
@@ -1314,6 +1323,7 @@ def createEDMModel():
         for n,l in animatedbones.items():
             rotationfcurves=[]
             translationfcurves=[]
+            scalefcurves=[]
             for fcu in l:
                 type,name,prop=parseAnimationPath(fcu)
                 known=False
@@ -1323,6 +1333,9 @@ def createEDMModel():
                 if prop=="location":
                     known=True
                     translationfcurves.append(fcu)
+                if prop=="scale":
+                    known=True
+                    scalefcurves.append(fcu)
                 if known==False:
                     print("unknown animationsargument "+prop)
                     
@@ -1339,9 +1352,10 @@ def createEDMModel():
                             q[fcu.array_index]=fcu.keyframe_points[i].co[1]
                         frame=a+b*rotationfcurves[0].keyframe_points[i].co[0] #range anpassen
                         data.append(EDMAnimationData(frame,q))
-                    edmmodel.nodes[boneid[name]].rotationAnimations.append(EDMAnimationSet(action.animationArgument,data))
+                    edmmodel.nodes[boneid[name]].rotationAnimations.append(EDMAnimationSet(action.animationArgument,data,[]))
                     if action.animationArgument+1>actionindex:
                         actionindex=action.animationArgument+1
+						
             if len(translationfcurves)!=3:
                 if len(translationfcurves)!=0:
                     print("incomplete position keyframes. Please use all three positionchannels")
@@ -1358,7 +1372,26 @@ def createEDMModel():
                         v=M @ q
                         data.append(EDMAnimationData(frame,v))
                     #print("     " +name+" " +str(boneid[name]))
-                    edmmodel.nodes[boneid[name]].positionAnimations.append(EDMAnimationSet(action.animationArgument,data))
+                    edmmodel.nodes[boneid[name]].positionAnimations.append(EDMAnimationSet(action.animationArgument,data,[]))
+                    if action.animationArgument+1>actionindex:
+                        actionindex=action.animationArgument+1
+			
+            if len(scalefcurves)!=3:
+                if len(scalefcurves)!=0:
+                    print("incomplete scale keyframes. Please use all three scalechannels")
+            else: 
+                N=checkKeyframes(scalefcurves)
+                if N!=None:
+                    data=[]
+                    for i in range(N):
+                        q=mathutils.Vector([0,0,0])
+                        for fcu in scalefcurves:
+                            q[fcu.array_index]=fcu.keyframe_points[i].co[1]
+                        frame=a+b*scalefcurves[0].keyframe_points[i].co[0] #range anpassen
+                        data.append(EDMAnimationData(frame,q))
+                    data2=[]
+                    data2.append(EDMAnimationData(0,mathutils.Quaternion([0.0,0.0,0.0,1.0])))
+                    edmmodel.nodes[boneid[name]].scaleAnimations.append(EDMAnimationSet(action.animationArgument,data2,data))
                     if action.animationArgument+1>actionindex:
                         actionindex=action.animationArgument+1
         
