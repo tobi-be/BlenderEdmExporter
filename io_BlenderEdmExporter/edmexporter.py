@@ -1406,11 +1406,20 @@ def prepareObjects():
                 if  len(p.vertices) != 4 and len(p.vertices) != 3: 
                     calc_tan=False
                     break					
-            if len(c.data.uv_layers)>0 and calc_tan:		
+            if len(c.data.uv_layers)>0 and calc_tan:
+                me =c.data			
                 uv_layer = c.data.uv_layers[0].data
-                c.data.calc_normals()			
-                c.data.calc_tangents(uvmap=c.data.uv_layers[0].name)
-                c.data.free_tangents()
+                for poly in me.polygons:
+                    loop=range(poly.loop_start, poly.loop_start + poly.loop_total)
+                    for loop_index in loop:
+                        id=me.loops[loop_index].vertex_index #ursprünglicher vertex
+                        tangent=me.loops[loop_index].tangent
+                        bitangent=me.loops[loop_index].bitangent
+                        normal=me.loops[loop_index].normal
+                        uv=mathutils.Vector([uv_layer[loop_index].uv[0],1.0-uv_layer[loop_index].uv[1]]) #uv
+                me.calc_normals()			
+                me.calc_tangents(uvmap=c.data.uv_layers[0].name)
+                me.free_tangents()
     bpy.context.view_layer.update()
     return True	
     
