@@ -23,7 +23,8 @@ What should work:
 - A selection of material types including diffuse, normal and specular maps. roughmet textures can be added later
 - FakeOmniLights
 - Connectors
-- Argument based animations of Visibility, Rotation, Location and bone deformation
+- Argument based animations of Visibility, Rotation, Location, Scale and bone deformation
+- Lights  
 
 what doesn‘ t work:
 ------------------
@@ -31,9 +32,7 @@ what doesn‘ t work:
 - Import EDM models
 - LOD Nodes
 - Visibility Nodes on Skin Nodes
-- Lights (can be added via scripting at connectors?)
 - Export of modifiers
-- Export Scale animations.
 - Export of IK chains. Bones which are animated within an IK Chain has to be keyframed additionally by visual rotation or visual location
 
 known issues
