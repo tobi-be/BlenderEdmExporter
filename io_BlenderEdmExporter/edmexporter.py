@@ -337,14 +337,27 @@ class RootNode:
         RootNode.N+=1
         self.name = "Scene Root"
         self.type = "model::RootNode"
-        self.BoundingMin=mathutils.Vector([-10.0,-10.0,-10.0]) #???
-        self.BoundingMax=mathutils.Vector([10.0,10.0,10.0]) #???
+        self.BoundingMin=mathutils.Vector([0,0,0]) #???
+        self.BoundingMax=mathutils.Vector([0,0.0,0.0]) #???
         self.u1=mathutils.Vector([1.0e38,1.0e38,1.0e38])
         self.u2=mathutils.Vector([-1.0e38, -1.0e38, -1.0e38]) 
         self.materials=[]
         self.NAnimationArgs=4
         self.PropertySet=[]
         self.PropertySet.append(EDMProperty("__VERSION__","model::Property<unsigned int>",3))
+    def updateBoundingBox(self,obj):
+        for i in range(8):
+            corner=mathutils.Vector([obj.bound_box[i][0],obj.bound_box[i][1],obj.bound_box[i][2]])
+            box_corner = obj.matrix_world @ corner 
+            self.BoundingMin[0]=min(box_corner[1],self.BoundingMin[0])		
+            self.BoundingMax[0]=max(box_corner[1],self.BoundingMax[0])
+            self.BoundingMin[1]=min(box_corner[2],self.BoundingMin[1])		
+            self.BoundingMax[1]=max(box_corner[2],self.BoundingMax[1])
+            self.BoundingMin[2]=min(box_corner[0],self.BoundingMin[2])		
+            self.BoundingMax[2]=max(box_corner[0],self.BoundingMax[2])
+
+
+        
     def write(self,file):
         writeNodeBase(file,self)
         writeVec3d(file,self.BoundingMin)
@@ -447,7 +460,7 @@ class ArgAnimationNode:
         self.vector=M.to_translation()
         self.Q1=M.to_quaternion()
         #self.Q1=mathutils.Quaternion([0.0,0.0,0.0,1.0])
-        self.Q2=mathutils.Quaternion([0.0,0.0,0.0,1.0])
+        self.Q2=mathutils.Quaternion([1.0,0.0,0.0,0.0])
         self.scale=mathutils.Vector([1.0,1.0,1.0])
         self.positionAnimations=[]
         self.rotationAnimations=[]
@@ -1130,6 +1143,7 @@ def meshIsOk(obj):
             return False
     return True
 
+    
 def createEDMModel():
     resetData()
     #layer = bpy.context.view_layer
@@ -1175,8 +1189,8 @@ def createEDMModel():
     edmmodel.nodes.append(b)
     nodeindex+=1
     #Transformnodes start with rootBone
-    if rootBone in animatedbones:
-        b=ArgAnimationNode(c)
+    if rootBone.name in animatedbones:
+        b=ArgAnimationNode(rootBone)
     else:
         b=TransformNode(rootBone)
     b.parentid=nodeindex
@@ -1216,8 +1230,8 @@ def createEDMModel():
         if c.type=='MESH':
             #c.to_mesh(preserve_all_data_layers=True, depsgraph=None)
             #c.update_from_editmode()
-            #c.data.validate(verbose=True, clean_customdata=False)			
-            
+            #c.data.validate(verbose=True, clean_customdata=False)
+            edmmodel.rootNode.updateBoundingBox(c)			
             type=c.EDMRenderType
         if type=='RenderNode':
             if hasMaterial(c) and meshIsOk(c):	
@@ -1390,7 +1404,7 @@ def createEDMModel():
                         frame=a+b*scalefcurves[0].keyframe_points[i].co[0] #range anpassen
                         data.append(EDMAnimationData(frame,q))
                     data2=[]
-                    data2.append(EDMAnimationData(0,mathutils.Quaternion([0.0,0.0,0.0,1.0])))
+                    data2.append(EDMAnimationData(0,mathutils.Quaternion([1.0, 0.0 , 0.0, 0.0])))
                     edmmodel.nodes[boneid[name]].scaleAnimations.append(EDMAnimationSet(action.animationArgument,data2,data))
                     if action.animationArgument+1>actionindex:
                         actionindex=action.animationArgument+1

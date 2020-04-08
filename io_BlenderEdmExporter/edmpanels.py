@@ -93,7 +93,13 @@ class ActionOptionPanel(bpy.types.Panel):
     
     @classmethod
     def poll(cls, context):
-        return (context.object is not None) 
+        if context.object is None:
+            return False
+        if context.object.animation_data is None:
+            return False			
+        if context.object.animation_data.action is None:
+            return False		
+        return True
         
     def draw_header(self, context):
         layout = self.layout
