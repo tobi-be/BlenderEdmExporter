@@ -260,6 +260,8 @@ class EDMMaterial:
             self.materialName="glass_material"
             self.Blending=1 #char 
             self.VertexFormat[1]=3 #normals
+            self.VertexFormat[2]=0
+            self.VertexFormat[3]=0
         if material.EDMMaterialType=='self_illu':
             self.materialName="self_illum_material"
             self.Blending=1 #char 
@@ -1142,17 +1144,20 @@ def meshIsOk(obj):
             print("Not a tri or quad. Mesh is not exported") 
             return False
     return True
-
     
 def createEDMModel():
     resetData()
     #layer = bpy.context.view_layer
     
     #layer.update()
-    if len(bpy.data.armatures) !=1:
+    armatures=[]
+    for i in bpy.data.objects:
+        if i.type=='ARMATURE':
+            armatures.append(i)		
+    if len(armatures) !=1:
         print("Use one and only one armature! Not writing")
         return None
-    armature=bpy.data.objects[bpy.data.armatures[0].name]
+    armature=armatures[0]
     bones=armature.data.bones
     #create list of animated bones. 
     actions=bpy.data.actions

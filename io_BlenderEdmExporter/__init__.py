@@ -35,8 +35,8 @@ class ExportEDMFile(bpy.types.Operator,ExportHelper):
     def execute(self, context):
         #logfile = open("D:/edm/logfile.txt", "w")
         #logfile.write("Log EDM-Export")
-        
-        bpy.ops.object.mode_set(mode='OBJECT')
+        if not len(bpy.context.selected_objects) ==0:
+            bpy.ops.object.mode_set(mode='OBJECT')
         prepareObjects()
         edmmodel=createEDMModel()
         if edmmodel!=None:		
