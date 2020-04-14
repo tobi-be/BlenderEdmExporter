@@ -5,9 +5,9 @@ import tempfile
 import bmesh
 from math import radians
 
-
 printnodes=False
 stringLookUp=[]
+warningStrs=[]
 
 def getStringIndex(string):
     for i in range(len(stringLookUp)):
@@ -15,7 +15,7 @@ def getStringIndex(string):
             return i
     stringLookUp.append(string)
     return len(stringLookUp)-1
-    
+
 def writeUChar(file, value):
     file.write(struct.pack('<B', value))
 
@@ -42,17 +42,17 @@ def writeString(file, value):
 def writeVec2f(file, vector):
     writeFloat(file,vector[0])
     writeFloat(file,vector[1])
-  
+
 def writeVec3f(file, vector):
     writeFloat(file,vector[0])
     writeFloat(file,vector[1])
     writeFloat(file,vector[2])
-    
+
 def writeVec3d(file,vector):
     writeDouble(file,vector[0])
     writeDouble(file,vector[1])
     writeDouble(file,vector[2])
-   
+
 def writeVecf(file, vector):
     for i in vector:
         writeFloat(file,i)
@@ -64,7 +64,7 @@ def writeVecd(file, vector):
 def swapMatrix(matrix):
     nmatrix =mathutils.Matrix([matrix[0], matrix[2], -matrix[1], matrix[3]])
     return nmatrix
-    
+
 def swapLocation(vec):
     vec2 =mathutils.Vector([vec[0],vec[1],vec[2]])
     return  vec2
@@ -84,15 +84,15 @@ def writeQuaternion(file, quat):
     writeDouble(file,quat[2])
     writeDouble(file,quat[3])
     writeDouble(file,quat[0])
-    
+
 def writePropertySet(file,properties):
     writeUInt(file,len(properties))
     for p in properties:
         p.write(file)
-        
+
 def writeStringLookUp(file):
     N=0
-    for s in stringLookUp: 
+    for s in stringLookUp:
         N+=len(s)+1
     writeUInt(file,N)
     for s in stringLookUp:
@@ -105,8 +105,12 @@ def writeNodeBase(file,node):
     writeString(file,node.name)
     writeUInt(file,0)
     writePropertySet(file,node.PropertySet)
-    		
-    
+
+def writeWarning(warning_str):
+    print(warning_str)
+    warningStrs.append(warning_str)
+
+
 class EDMAnimationData:
     RotationData=0
     PositionData=0
@@ -138,7 +142,7 @@ class EDMAnimationSet:
             writeUInt(file,len(self.data2))
             for d in self.data2:
                 d.write(file)
-            
+
 class EDMProperty:
     NPropVec2f=0
     NPropVec3f=0
@@ -187,7 +191,7 @@ class EDMTexture:
         writeUInt(file,self.unknown2[2])
         writeUInt(file,self.unknown2[3])
         writeMatrixf(file,self.matrix)
-        
+
 class EDMFakeLightMaterial:
     def __init__(self,filename):
         self.nameIndex=0 #setzen
@@ -195,34 +199,34 @@ class EDMFakeLightMaterial:
         self.name=""
         self.materialName="fake_omni_lights2"
         self.uniforms=[]
-        self.animatedUniforms=[] 
+        self.animatedUniforms=[]
         self.textures=[]
         self.TextureCoordinateChannels=[-1 for i in range(12)] #ints
         self.VertexFormat=[0 for i in range(26)] #chars
-        self.shadows=1 
+        self.shadows=1
         self.DepthBias=0 #Uint
         self.textures.append(EDMTexture(0,filename))# always?
-        self.Blending=0 #char 
+        self.Blending=0 #char
         EDMMaterial.NPropertiesSets+=1
-        
+
     def write(self,file):
         writeUInt(file,10)
-        writeUInt(file,getStringIndex("BLENDING"))  
-        writeUChar(file,self.Blending)   
-        writeUInt(file,getStringIndex("DEPTH_BIAS"))  
+        writeUInt(file,getStringIndex("BLENDING"))
+        writeUChar(file,self.Blending)
+        writeUInt(file,getStringIndex("DEPTH_BIAS"))
         writeUInt(file,self.DepthBias)
-        writeUInt(file,getStringIndex("VERTEX_FORMAT"))  
-        writeUInt(file,26)  
+        writeUInt(file,getStringIndex("VERTEX_FORMAT"))
+        writeUInt(file,26)
         for i in range(26):
             writeUChar(file,self.VertexFormat[i])
-        writeUInt(file,getStringIndex("TEXTURE_COORDINATES_CHANNELS")) 
-        writeUInt(file,12) 
+        writeUInt(file,getStringIndex("TEXTURE_COORDINATES_CHANNELS"))
+        writeUInt(file,12)
         for i in range(12):
             writeInt(file,self.TextureCoordinateChannels[i])
         writeUInt(file,getStringIndex("MATERIAL_NAME"))
         writeUInt(file,getStringIndex(self.materialName))
         writeUInt(file,getStringIndex("NAME"))
-        writeUInt(file,getStringIndex(self.name))    
+        writeUInt(file,getStringIndex(self.name))
         writeUInt(file,getStringIndex("SHADOWS"))
         writeUChar(file,self.shadows);
         writeUInt(file,getStringIndex("TEXTURES"))
@@ -242,7 +246,7 @@ class EDMMaterial:
         self.materialId=EDMMaterial.NPropertiesSets
         self.name=material.name
         self.uniforms=[]
-        self.animatedUniforms=[] 
+        self.animatedUniforms=[]
         self.textures=[]
         self.TextureCoordinateChannels=[-1 for i in range(12)] #ints
         self.VertexFormat=[0 for i in range(26)] #chars
@@ -252,36 +256,36 @@ class EDMMaterial:
         self.DepthBias=0 #Uint
         self.textures.append(EDMTexture(0,material.EDMDiffuseMapName))# always?
         self.TextureCoordinateChannels[0]=0
-        self.Blending=0 #char 
+        self.Blending=0 #char
         self.materialName=""
         if weights:
             self.VertexFormat[21]=4
         if material.EDMMaterialType=='Glass':
             self.materialName="glass_material"
-            self.Blending=1 #char 
+            self.Blending=1 #char
             self.VertexFormat[1]=3 #normals
             self.VertexFormat[2]=0
             self.VertexFormat[3]=0
         if material.EDMMaterialType=='self_illu':
             self.materialName="self_illum_material"
-            self.Blending=1 #char 
+            self.Blending=1 #char
             self.VertexFormat[1]=3
             self.uniforms.append(EDMProperty("selfIlluminationValue", "model::Property<float>" ,material.EDMSelfIllumination))
         if material.EDMMaterialType=='transp_self_illu':
             self.materialName="transparent_self_illum_material"
             self.uniforms.append(EDMProperty("selfIlluminationValue", "model::Property<float>" ,material.EDMSelfIllumination))
-            self.Blending=1 #char 
+            self.Blending=1 #char
         if material.EDMMaterialType=='bano':
             self.materialName="bano_material"
             self.uniforms.append(EDMProperty("selfIlluminationValue", "model::Property<float>" ,material.EDMSelfIllumination))
-            self.Blending=1 #char 
+            self.Blending=1 #char
             self.shadows=0
             self.VertexFormat[1]=3
         if material.EDMMaterialType=='Solid':
             self.materialName="def_material"
             self.VertexFormat[1]=3 #normals
             if material.EDMUseAlpha:
-                self.Blending=2 #char 
+                self.Blending=2 #char
             else:
                 self.Blending=0
             if material.EDMUseSpecularMap:
@@ -299,29 +303,29 @@ class EDMMaterial:
             self.uniforms.append(EDMProperty("specFactor", "model::Property<float>", material.EDMSpecularFactor))
             self.uniforms.append(EDMProperty("reflectionBlurring", "model::Property<float>", material.EDMReflectionBlurring))
             self.uniforms.append(EDMProperty("reflectionValue", "model::Property<float>", material.EDMReflectionValue))
-        
+
         self.uniforms.append(EDMProperty("diffuseValue", "model::Property<float>" ,material.EDMDiffuseValue))
         self.uniforms.append(EDMProperty("diffuseShift", "model::Property<osg::Vec2f>" ,mathutils.Vector([0.0,0.0])))
         EDMMaterial.NPropertiesSets+=1
-        
+
     def write(self,file):
         writeUInt(file,10)
-        writeUInt(file,getStringIndex("BLENDING"))  
-        writeUChar(file,self.Blending)   
-        writeUInt(file,getStringIndex("DEPTH_BIAS"))  
+        writeUInt(file,getStringIndex("BLENDING"))
+        writeUChar(file,self.Blending)
+        writeUInt(file,getStringIndex("DEPTH_BIAS"))
         writeUInt(file,self.DepthBias)
-        writeUInt(file,getStringIndex("VERTEX_FORMAT"))  
-        writeUInt(file,26)  
+        writeUInt(file,getStringIndex("VERTEX_FORMAT"))
+        writeUInt(file,26)
         for i in range(26):
             writeUChar(file,self.VertexFormat[i])
-        writeUInt(file,getStringIndex("TEXTURE_COORDINATES_CHANNELS")) 
-        writeUInt(file,12) 
+        writeUInt(file,getStringIndex("TEXTURE_COORDINATES_CHANNELS"))
+        writeUInt(file,12)
         for i in range(12):
             writeInt(file,self.TextureCoordinateChannels[i])
         writeUInt(file,getStringIndex("MATERIAL_NAME"))
         writeUInt(file,getStringIndex(self.materialName))
         writeUInt(file,getStringIndex("NAME"))
-        writeUInt(file,getStringIndex(self.name))   
+        writeUInt(file,getStringIndex(self.name))
         writeUInt(file,getStringIndex("SHADOWS"))
         writeUChar(file,self.shadows);
         writeUInt(file,getStringIndex("TEXTURES"))
@@ -332,7 +336,7 @@ class EDMMaterial:
         writePropertySet(file,self.uniforms)
         writeUInt(file,getStringIndex("ANIMATED_UNIFORMS"))
         writePropertySet(file,self.animatedUniforms)
-        
+
 class RootNode:
     N=0
     def __init__(self):
@@ -342,7 +346,7 @@ class RootNode:
         self.BoundingMin=mathutils.Vector([0,0,0]) #???
         self.BoundingMax=mathutils.Vector([0,0.0,0.0]) #???
         self.u1=mathutils.Vector([1.0e38,1.0e38,1.0e38])
-        self.u2=mathutils.Vector([-1.0e38, -1.0e38, -1.0e38]) 
+        self.u2=mathutils.Vector([-1.0e38, -1.0e38, -1.0e38])
         self.materials=[]
         self.NAnimationArgs=4
         self.PropertySet=[]
@@ -350,16 +354,16 @@ class RootNode:
     def updateBoundingBox(self,obj):
         for i in range(8):
             corner=mathutils.Vector([obj.bound_box[i][0],obj.bound_box[i][1],obj.bound_box[i][2]])
-            box_corner = obj.matrix_world @ corner 
-            self.BoundingMin[0]=min(box_corner[1],self.BoundingMin[0])		
+            box_corner = obj.matrix_world @ corner
+            self.BoundingMin[0]=min(box_corner[1],self.BoundingMin[0])
             self.BoundingMax[0]=max(box_corner[1],self.BoundingMax[0])
-            self.BoundingMin[1]=min(box_corner[2],self.BoundingMin[1])		
+            self.BoundingMin[1]=min(box_corner[2],self.BoundingMin[1])
             self.BoundingMax[1]=max(box_corner[2],self.BoundingMax[1])
-            self.BoundingMin[2]=min(box_corner[0],self.BoundingMin[2])		
+            self.BoundingMin[2]=min(box_corner[0],self.BoundingMin[2])
             self.BoundingMax[2]=max(box_corner[0],self.BoundingMax[2])
 
 
-        
+
     def write(self,file):
         writeNodeBase(file,self)
         writeVec3d(file,self.BoundingMin)
@@ -412,7 +416,7 @@ class EDMLight:
         self.PropertySet=[]
         self.LightPropertySet=[]
         self.parentData=0
-        self.Color=obj.EDMLightColor 
+        self.Color=obj.EDMLightColor
         self.Brightness=obj.EDMLightBrightness
         self.Distance=obj.EDMLightDistance
         self.isSpot=0
@@ -433,8 +437,8 @@ class EDMLight:
         writeUInt(file,self.parentData)
         writeUChar(file,self.isSpot)
         writePropertySet(file,self.LightPropertySet)
-        writeUChar(file,0)    
-                
+        writeUChar(file,0)
+
 class EDMNode:
     N=0
     def __init__(self):
@@ -445,7 +449,7 @@ class EDMNode:
         self.parentid=-1
     def write(self,file):
         writeNodeBase(file,self)
-        
+
 class ArgAnimationNode:
     NRotation=0
     NPosition=0
@@ -458,7 +462,7 @@ class ArgAnimationNode:
         if isinstance(obj,bpy.types.Bone) and obj.parent!=None:
             M=obj.parent.matrix_local.inverted() @ obj.matrix_local
         else:
-            M=obj.matrix_local        
+            M=obj.matrix_local
         self.vector=M.to_translation()
         self.Q1=M.to_quaternion()
         #self.Q1=mathutils.Quaternion([0.0,0.0,0.0,1.0])
@@ -482,11 +486,11 @@ class ArgAnimationNode:
         writeUInt(file,len(self.rotationAnimations))
         for r in self.rotationAnimations:
             r.write(file)
-        #writeUInt(file,0) 
-        writeUInt(file,len(self.scaleAnimations)) 
+        #writeUInt(file,0)
+        writeUInt(file,len(self.scaleAnimations))
         for r in self.scaleAnimations:
             r.write(file)
-        
+
 class AnimatedBoneNode:
     N=0
     def __init__(self,obj):
@@ -497,7 +501,7 @@ class AnimatedBoneNode:
         if isinstance(obj,bpy.types.Bone) and obj.parent!=None:
             M=obj.parent.matrix_local.inverted() @ obj.matrix_local
         else:
-            M=obj.matrix_local       
+            M=obj.matrix_local
         self.vector=M.to_translation()
         self.Q1=M.to_quaternion()
         self.Q2=mathutils.Quaternion([1.0,0.0,0.0,0.0])
@@ -521,8 +525,8 @@ class AnimatedBoneNode:
         writeUInt(file,len(self.rotationAnimations))
         for r in self.rotationAnimations:
             r.write(file)
-        #writeUInt(file,0) 
-        writeUInt(file,len(self.scaleAnimations)) 
+        #writeUInt(file,0)
+        writeUInt(file,len(self.scaleAnimations))
         for r in self.scaleAnimations:
             r.write(file)
         writeMatrixd(file,self.matrix_inv)
@@ -534,8 +538,8 @@ class VisibilityData:
 class VisibilityKey:
     def __init__(self,start,end):
         self.start=start
-        self.end=end    
-        
+        self.end=end
+
 class VisibilityNode:
     N=0
     def __init__(self, parentid):
@@ -545,7 +549,7 @@ class VisibilityNode:
         self.parentid=parentid
         self.PropertySet=[]
         self.data={}
-            
+
     def addKey(self,argument, start, end):
         if not argument in self.data:
             self.data[argument]=VisibilityData(argument)
@@ -564,11 +568,11 @@ class VisibilityNode:
                 on=True
             if i.co.y==1:
                 if on:
-                    frameend=a+b*i.co.x					
+                    frameend=a+b*i.co.x
                     self.addKey(argument,framestart,frameend)
                 on=False
         if on:
-            self.addKey(argument,framestart,1000000.0)		
+            self.addKey(argument,framestart,1000000.0)
     def write(self,file):
         writeNodeBase(file,self)
         writeUInt(file,len(self.data))
@@ -579,7 +583,7 @@ class VisibilityNode:
                 writeDouble(file, key.start)
                 writeDouble(file, key.end)
 
-    
+
 
 class BoneNode:
     N=0
@@ -590,7 +594,7 @@ class BoneNode:
         if isinstance(obj,bpy.types.Bone) and obj.parent!=None:
             M=obj.parent.matrix_local.inverted() @ obj.matrix_local
         else:
-            M=obj.matrix_local       
+            M=obj.matrix_local
         self.matrix=M
         self.matrix_inv=obj.matrix_local.inverted()
         self.PropertySet=[]
@@ -599,7 +603,7 @@ class BoneNode:
         writeNodeBase(file,self)
         writeMatrixd(file,self.matrix)
         writeMatrixd(file,self.matrix_inv)
-    
+
 class EDMVertex:
     def __init__(self,vert,uv,normal,tangent,bitangent):
         self.co=vert.co
@@ -611,7 +615,7 @@ class EDMVertex:
         self.groups=[0,0,0,0]#groups angucken
         self.weights=[0.0,0.0,0.0,0.0]# auch angucken
         if len(vert.groups)>4:
-            print("Too much weights per vertex! Use Weights->Limit Total in Weight Paint mode to reduce limit to 4")
+            writeWarning("Too much weights per vertex! Use Weights->Limit Total in Weight Paint mode to reduce limit to 4")
         else:
             sum=0
             count=0
@@ -620,19 +624,19 @@ class EDMVertex:
                 self.weights[count]=g.weight
                 sum += g.weight
                 count+=1
-            if sum>0:   
+            if sum>0:
                 for i in range(4):
                     self.weights[i]=self.weights[i]/sum
             for i in range(4):
                 self.groups[i]=self.groups[i]
         self.uv=uv
-        
+
 def createMesh(me, simple):
     newverts=[]
     tris=[]
     me.calc_normals()
-	
-    if not simple:	
+
+    if not simple:
         #print("Length UV layer: " +str(len(me.uv_layers)))
         uv_layer = me.uv_layers[0].data
         me.calc_tangents(uvmap=me.uv_layers[0].name)
@@ -641,7 +645,7 @@ def createMesh(me, simple):
     for v in me.vertices:
         vlist.append([])
     def addTriSimple(vertIDs):
-        tri=[]        
+        tri=[]
         for loop_index in vertIDs:
             id=me.loops[loop_index].vertex_index #ursprünglicher vertex
             found=False
@@ -654,9 +658,9 @@ def createMesh(me, simple):
                 vlist[id].append(ivert)
                 newverts.append(EDMVertex(me.vertices[id],mathutils.Vector([0,0]),mathutils.Vector([0,0,0]),mathutils.Vector([0,0,0]),mathutils.Vector([0,0,0])))
             tri.append(ivert)
-        return tri		
+        return tri
     def addTri(vertIDs):
-        tri=[]        
+        tri=[]
         for loop_index in vertIDs:
             id=me.loops[loop_index].vertex_index #ursprünglicher vertex
             tangent=me.loops[loop_index].tangent
@@ -679,7 +683,7 @@ def createMesh(me, simple):
     for poly in me.polygons:
         loop=range(poly.loop_start, poly.loop_start + poly.loop_total)
         if simple:
-            tri=addTriSimple([loop[0],loop[1],loop[2]])			
+            tri=addTriSimple([loop[0],loop[1],loop[2]])
         else:
             tri=addTri([loop[0],loop[1],loop[2]])
         tris.append(tri)
@@ -691,9 +695,9 @@ def createMesh(me, simple):
             tris.append(tri)
     if not simple:
         me.free_tangents()
-    #print(len(newverts))		
+    #print(len(newverts))
     return newverts,tris
-    
+
 def writeMesh(file,verts,tris,normals,tangents,uvs,groups,weights):
     stride=3
     if groups:
@@ -772,7 +776,7 @@ class FakeOmniLightNode:
         writeVec2f(file,self.uv2)
         writeFloat(file,self.scale)
         writeUInt(file,0)
-    
+
 class RenderNode:
     giBytes=0
     gvBytes=0
@@ -782,9 +786,9 @@ class RenderNode:
         self.type="model::RenderNode"
         self.PropertySet=[]
         self.unknown=0
-        self.materialID=0 
-        self.parentData=0 
-        self.parentDataDamageArg=-1 
+        self.materialID=0
+        self.parentData=0
+        self.parentDataDamageArg=-1
         verts,tris=createMesh(mesh,False)
         #bpy.data.meshes.remove(mesh)
         self.verts=verts
@@ -797,7 +801,7 @@ class RenderNode:
     def write(self,file):
         writeNodeBase(file,self)
         writeUInt(file,0)
-        writeUInt(file,self.material.materialId) 
+        writeUInt(file,self.material.materialId)
         writeUInt(file,1) #NParentdata
         writeUInt(file,self.parentData)
         writeInt(file,self.parentDataDamageArg)
@@ -838,7 +842,7 @@ class SkinNode:
     def write(self,file):
         writeNodeBase(file,self)
         writeUInt(file,0)
-        writeUInt(file,self.material.materialId) 
+        writeUInt(file,self.material.materialId)
         writeUInt(file,len(self.bones))
         for b in self.bones:
             writeUInt(file,b)
@@ -855,7 +859,7 @@ class ShellNode:
         self.name=obj.name
         self.type="model::ShellNode"
         self.PropertySet=[]
-        self.parentData=0 
+        self.parentData=0
         self.VertexFormat=[0 for i in range(26)] #chars
         self.VertexFormat[0]=3
         self.stride=3
@@ -866,8 +870,8 @@ class ShellNode:
         ShellNode.cvBytes+=4*self.stride*len(self.tris)
     def write(self,file):
         writeNodeBase(file,self)
-        writeUInt(file,self.parentData) 
-        writeUInt(file,26)  
+        writeUInt(file,self.parentData)
+        writeUInt(file,26)
         for i in range(26):
             #print(self.VertexFormat[i])
             writeUChar(file,self.VertexFormat[i])
@@ -886,26 +890,26 @@ class EDMModel:
         self.Connectors=[]
         self.RenderNodes=[]
         self.SkinNodes=[]
-        self.ShellNodes=[] 
+        self.ShellNodes=[]
         self.LightNodes=[]
-                
+
     def writeIndexA(self,file):
         for n in self.nodes:
             if n.type in self.indexA:
                 self.indexA[n.type]+=1
             else:
-                self.indexA[n.type]=1  
+                self.indexA[n.type]=1
         for n in self.RenderNodes:
             if n.type in self.indexA:
                 self.indexA[n.type]+=1
             else:
-                self.indexA[n.type]=1  
-        self.indexA["model::RootNode"]=1  
+                self.indexA[n.type]=1
+        self.indexA["model::RootNode"]=1
         writeUInt(file,len(self.indexA))
         for k, v in self.indexA.items():
-            writeUInt(file,getStringIndex(k)) 
-            writeUInt(file,v) 
-            
+            writeUInt(file,getStringIndex(k))
+            writeUInt(file,v)
+
     def writeIndexB(self,file):
         count=0
         pos=file.tell()
@@ -919,7 +923,7 @@ class EDMModel:
             writeUInt(file,getStringIndex("__ci_bytes"))
             writeUInt(file,ShellNode.ciBytes)
             count+=1
-        if ShellNode.cvBytes>0:            
+        if ShellNode.cvBytes>0:
             writeUInt(file,getStringIndex("__cv_bytes"))
             writeUInt(file,ShellNode.cvBytes)
             count+=1
@@ -943,12 +947,12 @@ class EDMModel:
             writeUInt(file,getStringIndex("model::PropertiesSet"))
             writeUInt(file,EDMMaterial.NPropertiesSets)
             count+=1
-        #Counter schreiben    
+        #Counter schreiben
         pos2=file.tell()
         file.seek(pos)
         writeUInt(file,count)
         file.seek(pos2)
-    
+
     def write(self,filename):
         print("Write EDM-File")
         body=tempfile.TemporaryFile()
@@ -988,18 +992,18 @@ class EDMModel:
                 r.write(body)
             for s in self.SkinNodes:
                 #print("Write Skinnode")
-                s.write(body)  
+                s.write(body)
         if len(self.LightNodes)>0:
             groupcount+=1
             writeUInt(body,getStringIndex("LIGHT_NODES"))
             writeUInt(body,len(self.LightNodes))
             for l in self.LightNodes:
-                l.write(body)   
+                l.write(body)
         pos2=body.tell()
         body.seek(pos)
         writeUInt(body,groupcount)
-        body.seek(pos2)      
-        
+        body.seek(pos2)
+
         file=open( filename, "wb" )
         #print("Write Header")
         writeUChar(file,ord('E'))
@@ -1011,14 +1015,14 @@ class EDMModel:
         body.seek(0,0)
         file.write(body.read())
         file.close()
-        body.close() 
-    
+        body.close()
+
 def getOffsetTransform(a,b, shift):
     #Prüfen ob wirklich eine Transformation vorliegt
     #print(a.name)
     t=TransformNode(a)
     if shift:
-        mat=a.matrix_local	
+        mat=a.matrix_local
         transpose=mat.col[3]
         mat=mat@(mathutils.Matrix.Rotation(-radians(90.0), 4, 'Z') @mathutils.Matrix.Rotation(-radians(90.0), 4, 'Y')).inverted()
         mat.col[3]=transpose
@@ -1027,7 +1031,7 @@ def getOffsetTransform(a,b, shift):
         t.matrix = b.matrix_local.inverted() @ a.matrix_local
     #print(t.matrix)
     dx=t.matrix.to_translation()
-    dl=dx[0]*dx[0]+dx[1]*dx[1]+dx[2]*dx[2]    
+    dl=dx[0]*dx[0]+dx[1]*dx[1]+dx[2]*dx[2]
     return t
 
 def getAllChildren(obj,list):
@@ -1047,20 +1051,21 @@ def parseAnimationPath(fcu):
     else:
         if path=="hide_render":
             return "Visibility", "","Visibility"
-    return None,None,None		
-        
+    return None,None,None
+
+## TODO: check for returning None
 def checkKeyframes(curves):
     frames=[]
     N=len(curves[0].keyframe_points)
     for i in range(1, len(curves)):
         if N!=len(curves[i].keyframe_points):
-            print("inconsistend Keyframes: "+ curves[0].data_path+"Action: "+curves[0].id_data.name)            
+            writeWarning("Inconsistend Keyframes: {} Action: {}".format(curves[0].data_path, curves[0].id_data.name))
             return None
     for i in range(N):
         x0=curves[0].keyframe_points[i].co[0]
         for j in range(1, len(curves)):
             if x0!=curves[j].keyframe_points[i].co[0]:
-                print("inconsistend Keyframes: "+ curves[0].data_path+"Action: "+curves[0].id_data.name)
+                writeWarning("Inconsistend Keyframes: {} Action: {}".format(curves[0].data_path, curves[0].id_data.name))
                 return None
     return N
 def resetData():
@@ -1088,7 +1093,7 @@ def resetData():
     SkinNode.gvBytes=0
     ShellNode.ciBytes=0
     ShellNode.cvBytes=0
-    
+
 
 def getVisibilityFCurve(obj):
     if obj.animation_data==None:
@@ -1107,37 +1112,41 @@ def getVisibilityFCurve(obj):
 
 def hasMaterial(obj):
     if len(obj.material_slots)==0:
-        print("Object "+obj.name+" has no Material")
-        return False		
+        writeWarning("Object '{}' has no Material".format(obj.name))
+        return False
     else:
         return True
-	
+
 def meshIsOk(obj):
     me=obj.data
     if len(me.uv_layers)==0:
         print("No UV-Map no export")
         return False
     for p in me.polygons:
-        if  len(p.vertices) != 4 and len(p.vertices) != 3: 
-            print("Not a tri or quad. Mesh is not exported") 
+        if  len(p.vertices) != 4 and len(p.vertices) != 3:
+            writeWarning("'{}' is not a tri or quad. Mesh is not exported".format(obj.name))
             return False
     return True
-    
+
 def createEDMModel():
     resetData()
     #layer = bpy.context.view_layer
-    
+
     #layer.update()
+    global warningStrs
+    warningStrs=[]
     armatures=[]
     for i in bpy.data.objects:
         if i.type=='ARMATURE':
-            armatures.append(i)		
+            armatures.append(i)
     if len(armatures) !=1:
-        print("Use one and only one armature! Not writing")
+        msg = "Use one and only one armature! Not writing"
+        print(msg)
+        bpy.ops.edmexporter.messagebox('INVOKE_DEFAULT', message = msg)
         return None
     armature=armatures[0]
     bones=armature.data.bones
-    #create list of animated bones. 
+    #create list of animated bones.
     actions=bpy.data.actions
     animatedbones={}
     #print("Actions:")
@@ -1161,9 +1170,11 @@ def createEDMModel():
     for bone in bones:
         if bone.parent==None and bone.layers[0]==True:
             rootBone=bone
-            count+=1   
+            count+=1
     if count>1:
-        print("Use ONE bone as Root of the armature")
+        msg = "Use ONE bone as Root of the armature"
+        print(msg)
+        bpy.ops.edmexporter.messagebox('INVOKE_DEFAULT', message = msg)
         return None
     #Transform from Blender Coords to DCS coords
     b=TransformNode(rootBone)#rootBone is just a Dummy to create the node
@@ -1185,7 +1196,7 @@ def createEDMModel():
     getAllChildren(rootBone,children)
     count=0
     for c in children:
-        if c.layers[0] ==False: #skipping 
+        if c.layers[0] ==False: #skipping
             continue
         if c.name in animatedbones:
             if c.use_deform:
@@ -1202,22 +1213,22 @@ def createEDMModel():
         edmmodel.nodes.append(b)
         nodeindex+=1
         boneid[c.name]=nodeindex
-    #Object Children    
-    
+    #Object Children
+
     actionindex=0
     children=[]
     getAllChildren(armature,children)
-    for c in children: 
+    for c in children:
         if c.type=='EMPTY':
             type=c.EDMEmptyType
         if c.type=='MESH':
             #c.to_mesh(preserve_all_data_layers=True, depsgraph=None)
             #c.update_from_editmode()
             #c.data.validate(verbose=True, clean_customdata=False)
-            edmmodel.rootNode.updateBoundingBox(c)			
+            edmmodel.rootNode.updateBoundingBox(c)
             type=c.EDMRenderType
         if type=='RenderNode':
-            if hasMaterial(c) and meshIsOk(c):	
+            if hasMaterial(c) and meshIsOk(c):
                 r=RenderNode(c)
                 edmmodel.rootNode.materials.append(r.material)
             else:
@@ -1231,9 +1242,9 @@ def createEDMModel():
             r=ConnectorNode(c)
         if type=='Light':
             r=EDMLight(c)
-        if type=='RenderNode' or type=='ShellNode' or type=='Connector' or type=='FakeOmniLight' or type=='Light':            
+        if type=='RenderNode' or type=='ShellNode' or type=='Connector' or type=='FakeOmniLight' or type=='Light':
             if c.parent_bone=="":
-                print("Object "+c.name+" is not parented")
+                writeWarning("Object '{}' is not parented".format(c.name))
             else:
                 if c.parent_bone in armature.data.bones:
                     t=getOffsetTransform(c,armature.data.bones[c.parent_bone],type=='Connector' or type=='Light')
@@ -1245,9 +1256,9 @@ def createEDMModel():
                         boneid[c.name+"transform"]=nodeindex
                         r.parentData=nodeindex
                     if type=='RenderNode':
-                        edmmodel.RenderNodes.append(r) 
+                        edmmodel.RenderNodes.append(r)
                     if type=='FakeOmniLight':
-                        edmmodel.RenderNodes.append(r) 
+                        edmmodel.RenderNodes.append(r)
                     if type=='ShellNode':
                         edmmodel.ShellNodes.append(r)
                     if type=='Connector':
@@ -1255,13 +1266,13 @@ def createEDMModel():
                     if type=='Light':
                         edmmodel.LightNodes.append(r)
                 else:
-                    print("Parent "+c.name+" is not found")
+                    writeWarning("Parent for '{}' is not found".format(c.name))
         if type=='SkinNode':
-            if hasMaterial(c) and meshIsOk(c):	
+            if hasMaterial(c) and meshIsOk(c):
                 r=SkinNode(c,boneid)
                 edmmodel.rootNode.materials.append(r.material)
                 edmmodel.SkinNodes.append(r)
-        if type!='Connector'and type!='SkinNode':    
+        if type!='Connector'and type!='SkinNode':
             fcu,argument= getVisibilityFCurve(c)
             if fcu !=None:
                 v=VisibilityNode(r.parentData)
@@ -1273,7 +1284,7 @@ def createEDMModel():
                 nodeindex+=1
                 boneid[c.name+"visibility"]=nodeindex
                 r.parentData=nodeindex
-    
+
     if printnodes:
         print("")
         print("Nodes: ")
@@ -1294,11 +1305,11 @@ def createEDMModel():
         #print(boneid)
         print("")
         #print("Add Actions")
-    
+
     for action in actions:
         if not action.exportToEDM:
             continue
-        		
+
         #print("Action: "+action.name)
         tMin,tMax=action.frame_range
         b=2.0/(tMax-tMin)
@@ -1316,7 +1327,7 @@ def createEDMModel():
                         animatedbones[name]=[fcu]
             else:
                 if type!='Visibility':
-                    print(type+ "-Animationen are not supported")
+                    writeWarning("'{}' - Animation are not supported".format(type))
         for n,l in animatedbones.items():
             rotationfcurves=[]
             translationfcurves=[]
@@ -1334,12 +1345,12 @@ def createEDMModel():
                     known=True
                     scalefcurves.append(fcu)
                 if known==False:
-                    print("unknown animationsargument "+prop)
-                    
+                    writeWarning("unknown animationsargument "+prop)
+
             if len(rotationfcurves)!=4:
                 if len(rotationfcurves)!=0:
-                    print("incomplete rotation keyframes. Please use all four quaternionchannels")
-            else: 
+                    writeWarning("Incomplete rotation keyframes. Please use all four quaternionchannels")
+            else:
                 N=checkKeyframes(rotationfcurves)
                 if N!=None:
                     data=[]
@@ -1352,11 +1363,11 @@ def createEDMModel():
                     edmmodel.nodes[boneid[name]].rotationAnimations.append(EDMAnimationSet(action.animationArgument,data,[]))
                     if action.animationArgument+1>actionindex:
                         actionindex=action.animationArgument+1
-						
+
             if len(translationfcurves)!=3:
                 if len(translationfcurves)!=0:
-                    print("incomplete position keyframes. Please use all three positionchannels")
-            else: 
+                    writeWarning("Incomplete position keyframes. Please use all three positionchannels")
+            else:
                 N=checkKeyframes(translationfcurves)
                 if N!=None:
                     data=[]
@@ -1365,18 +1376,18 @@ def createEDMModel():
                         q=mathutils.Vector([0,0,0])
                         for fcu in translationfcurves:
                             q[fcu.array_index]=fcu.keyframe_points[i].co[1]
-                        frame=a+b*translationfcurves[0].keyframe_points[i].co[0] 
+                        frame=a+b*translationfcurves[0].keyframe_points[i].co[0]
                         v=M @ q
                         data.append(EDMAnimationData(frame,v))
                     #print("     " +name+" " +str(boneid[name]))
                     edmmodel.nodes[boneid[name]].positionAnimations.append(EDMAnimationSet(action.animationArgument,data,[]))
                     if action.animationArgument+1>actionindex:
                         actionindex=action.animationArgument+1
-			
+
             if len(scalefcurves)!=3:
                 if len(scalefcurves)!=0:
-                    print("incomplete scale keyframes. Please use all three scalechannels")
-            else: 
+                    writeWarning("Incomplete scale keyframes. Please use all three scalechannels")
+            else:
                 N=checkKeyframes(scalefcurves)
                 if N!=None:
                     data=[]
@@ -1391,20 +1402,22 @@ def createEDMModel():
                     edmmodel.nodes[boneid[name]].scaleAnimations.append(EDMAnimationSet(action.animationArgument,data2,data))
                     if action.animationArgument+1>actionindex:
                         actionindex=action.animationArgument+1
-        
-    edmmodel.rootNode.NAnimationArgs=actionindex+1    
+
+    edmmodel.rootNode.NAnimationArgs=actionindex+1
+    if len(warningStrs):
+        bpy.ops.edmexporter.messagebox('INVOKE_DEFAULT', message="Export finished with next warnings:", wrnlist='|'.join(warningStrs))
     return edmmodel
-    
+
 def prepareObjects():
     for c in bpy.data.objects:
         if c.type=='MESH':
             calc_tan=True
             for p in c.data.polygons:
-                if  len(p.vertices) != 4 and len(p.vertices) != 3: 
+                if  len(p.vertices) != 4 and len(p.vertices) != 3:
                     calc_tan=False
-                    break					
+                    break
             if len(c.data.uv_layers)>0 and calc_tan:
-                me =c.data			
+                me =c.data
                 uv_layer = c.data.uv_layers[0].data
                 for poly in me.polygons:
                     loop=range(poly.loop_start, poly.loop_start + poly.loop_total)
@@ -1414,9 +1427,8 @@ def prepareObjects():
                         bitangent=me.loops[loop_index].bitangent
                         normal=me.loops[loop_index].normal
                         uv=mathutils.Vector([uv_layer[loop_index].uv[0],1.0-uv_layer[loop_index].uv[1]]) #uv
-                me.calc_normals()			
+                me.calc_normals()
                 me.calc_tangents(uvmap=c.data.uv_layers[0].name)
                 me.free_tangents()
     bpy.context.view_layer.update()
-    return True	
-    
+    return True

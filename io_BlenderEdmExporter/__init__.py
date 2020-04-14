@@ -9,6 +9,7 @@ import bpy
 from .edmexporter import*
 from .edmpanels import*
 from .edmprops import*
+from .edmmessagebox import*
 from bpy_extras.io_utils import ExportHelper
 
 if "bpy" in locals():
@@ -39,11 +40,11 @@ class ExportEDMFile(bpy.types.Operator,ExportHelper):
             bpy.ops.object.mode_set(mode='OBJECT')
         prepareObjects()
         edmmodel=createEDMModel()
-        if edmmodel!=None:		
-            edmmodel.write( self.filepath ) 
+        if edmmodel!=None:
+            edmmodel.write( self.filepath )
             print("Finished")
         #logfile.close()
-        return {'FINISHED'}   
+        return {'FINISHED'}
 
 def menu_function_export(self, context):
     self.layout.operator(ExportEDMFile.bl_idname,
@@ -56,13 +57,15 @@ def register():
     bpy.types.TOPBAR_MT_file_export.append(menu_function_export)
     bpy.utils.register_class(EDMObjectPanel)
     bpy.utils.register_class(ActionOptionPanel)
-    
+    bpy.utils.register_class(EDMMessageBox)
+
 def unregister():
     bpy.utils.unregister_class(ActionOptionPanel)
     bpy.utils.unregister_class(EDMObjectPanel)
     bpy.utils.unregister_class(BlenderEDMOptions)
     bpy.utils.unregister_class(ExportEDMFile)
-    
+    bpy.utils.unregister_class(EDMMessageBox)
+
 
 
 # This allows you to run the script directly from Blender's Text editor
