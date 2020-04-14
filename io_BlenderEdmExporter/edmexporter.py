@@ -777,24 +777,6 @@ class RenderNode:
     giBytes=0
     gvBytes=0
     def __init__(self,obj):
-        #print(obj.is_modified())	
-        #depsgraph = bpy.context.evaluated_depsgraph_get()
-        #bm = bmesh.new()
-        
-        #if True:
-        #    ob_eval = obj.evaluated_get(depsgraph)
-        #else:
-        #    ob_eval = obj
-        
-        #me = ob_eval.to_mesh()
-                
-        #me.transform(ob.matrix_world)
-        #bm.from_mesh(me)
-        #ob_eval.to_mesh_clear()
-        
-        #mesh = bpy.data.meshes.new("TMPEDMEXPORT")
-        #bm.to_mesh(mesh)
-        #bm.free()
         mesh = obj.data
         self.name=obj.name
         self.type="model::RenderNode"
@@ -807,11 +789,7 @@ class RenderNode:
         #bpy.data.meshes.remove(mesh)
         self.verts=verts
         self.tris=tris
-        if len(obj.material_slots)>0:
-            self.sourcematerial=obj.material_slots[0].material
-        else:
-            print("Error no Material")
-            return None
+        self.sourcematerial=obj.material_slots[0].material
         self.material=EDMMaterial(self.sourcematerial,False)
         self.stride=15 #automatisch aus Material ermitteln
         RenderNode.giBytes+=12*len(self.tris)
@@ -1076,13 +1054,13 @@ def checkKeyframes(curves):
     N=len(curves[0].keyframe_points)
     for i in range(1, len(curves)):
         if N!=len(curves[i].keyframe_points):
-            print("inconsistend Keyframes: "+ curves[0].data_path+"Action "+curves[0].id_data.name)            
+            print("inconsistend Keyframes: "+ curves[0].data_path+"Action: "+curves[0].id_data.name)            
             return None
     for i in range(N):
         x0=curves[0].keyframe_points[i].co[0]
         for j in range(1, len(curves)):
             if x0!=curves[j].keyframe_points[i].co[0]:
-                print("inconsistend Keyframes: "+ curves[0].data_path+"Action "+curves[0].id_data.name)
+                print("inconsistend Keyframes: "+ curves[0].data_path+"Action: "+curves[0].id_data.name)
                 return None
     return N
 def resetData():
@@ -1254,8 +1232,8 @@ def createEDMModel():
         if type=='Light':
             r=EDMLight(c)
         if type=='RenderNode' or type=='ShellNode' or type=='Connector' or type=='FakeOmniLight' or type=='Light':            
-            if c.parent_bone==None:
-                print("Object is not parented")
+            if c.parent_bone=="":
+                print("Object "+c.name+" is not parented")
             else:
                 if c.parent_bone in armature.data.bones:
                     t=getOffsetTransform(c,armature.data.bones[c.parent_bone],type=='Connector' or type=='Light')
@@ -1277,7 +1255,7 @@ def createEDMModel():
                     if type=='Light':
                         edmmodel.LightNodes.append(r)
                 else:
-                    print("Parent not found")
+                    print("Parent "+c.name+" is not found")
         if type=='SkinNode':
             if hasMaterial(c) and meshIsOk(c):	
                 r=SkinNode(c,boneid)
