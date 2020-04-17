@@ -8,6 +8,7 @@ from math import radians
 printnodes=False
 stringLookUp=[]
 warningStrs=[]
+exportErrorStr=""
 
 def getStringIndex(string):
     for i in range(len(stringLookUp)):
@@ -1053,7 +1054,6 @@ def parseAnimationPath(fcu):
             return "Visibility", "","Visibility"
     return None,None,None
 
-## TODO: check for returning None
 def checkKeyframes(curves):
     frames=[]
     N=len(curves[0].keyframe_points)
@@ -1136,13 +1136,14 @@ def createEDMModel():
     global warningStrs
     warningStrs=[]
     armatures=[]
+    global exportErrorStr
+    exportErrorStr=""
     for i in bpy.data.objects:
         if i.type=='ARMATURE':
             armatures.append(i)
     if len(armatures) !=1:
-        msg = "Use one and only one armature! Not writing"
-        print(msg)
-        bpy.ops.edmexporter.messagebox('INVOKE_DEFAULT', message = msg)
+        exportErrorStr = "Use one and only one armature! Not writing"
+        print(exportErrorStr)
         return None
     armature=armatures[0]
     bones=armature.data.bones
@@ -1172,9 +1173,8 @@ def createEDMModel():
             rootBone=bone
             count+=1
     if count>1:
-        msg = "Use ONE bone as Root of the armature"
-        print(msg)
-        bpy.ops.edmexporter.messagebox('INVOKE_DEFAULT', message = msg)
+        exportErrorStr = "Use ONE bone as Root of the armature"
+        print(exportErrorStr)
         return None
     #Transform from Blender Coords to DCS coords
     b=TransformNode(rootBone)#rootBone is just a Dummy to create the node
@@ -1404,8 +1404,6 @@ def createEDMModel():
                         actionindex=action.animationArgument+1
 
     edmmodel.rootNode.NAnimationArgs=actionindex+1
-    if len(warningStrs):
-        bpy.ops.edmexporter.messagebox('INVOKE_DEFAULT', message="Export finished with next warnings:", wrnlist='|'.join(warningStrs))
     return edmmodel
 
 def prepareObjects():
@@ -1432,3 +1430,9 @@ def prepareObjects():
                 me.free_tangents()
     bpy.context.view_layer.update()
     return True
+
+def getEDMWarnings():
+    return warningStrs
+
+def getEDMError():
+    return exportErrorStr
