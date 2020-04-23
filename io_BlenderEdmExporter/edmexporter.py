@@ -878,6 +878,29 @@ class ShellNode:
         writeMesh(file,self.verts,self.tris,False,False,False,False,False)
         #writeMesh(file,verts,tris,normals,tangents,uvs,groups,weights):
 
+class SegmentsNode:
+    ciBytes=0
+    cvBytes=0
+    def __init__(self,obj):
+        mesh=obj.data
+        self.name=obj.name
+        self.type="model::SegmentsNode"
+        self.PropertySet=[]
+        self.parentData=0
+        self.segments=[]
+        for e in mesh.edges:
+            self.segments.append([mesh.vertices[e.vertices[0]].co,mesh.vertices[e.vertices[1]].co])
+        print(len(self.segments))
+    def write(self,file):
+        writeNodeBase(file,self)
+        writeUInt(file,self.parentData)
+        writeUInt(file,len(self.segments))
+        for i in self.segments:
+            writeVec3f(file,i[0])
+            writeVec3f(file,i[1])
+            print(i[0])
+            print(i[1])
+
 class EDMModel:
     def __init__(self):
         self.nodes=[]
@@ -891,6 +914,7 @@ class EDMModel:
         self.RenderNodes=[]
         self.SkinNodes=[]
         self.ShellNodes=[]
+        self.SegmentsNodes=[]
         self.LightNodes=[]
 
     def writeIndexA(self,file):
@@ -976,13 +1000,15 @@ class EDMModel:
             writeUInt(body,len(self.Connectors))
             for c in self.Connectors:
                 c.write(body)
-        if len(self.ShellNodes)>0:
+        if len(self.ShellNodes)+len(self.SegmentsNodes)>0:
             groupcount+=1
             writeUInt(body,getStringIndex("SHELL_NODES"))
-            writeUInt(body,len(self.ShellNodes))
+            writeUInt(body,len(self.ShellNodes)+len(self.SegmentsNodes))
             for s in self.ShellNodes:
-                #print("Shell")
                 s.write(body)
+            for s in self.SegmentsNodes:
+                s.write(body)
+				
         if len(self.RenderNodes)+len(self.SkinNodes)>0:
             #print("Write Rendernodes")
             groupcount+=1
@@ -1238,11 +1264,13 @@ def createEDMModel():
             edmmodel.rootNode.materials.append(r.material)
         if type=='ShellNode':
             r=ShellNode(c)
+        if type=='SegmentsNode':
+            r=SegmentsNode(c)
         if type=='Connector':
             r=ConnectorNode(c)
         if type=='Light':
             r=EDMLight(c)
-        if type=='RenderNode' or type=='ShellNode' or type=='Connector' or type=='FakeOmniLight' or type=='Light':
+        if type=='RenderNode' or type=='ShellNode' or type=='SegmentsNode' or type=='Connector' or type=='FakeOmniLight' or type=='Light':
             if c.parent_bone=="":
                 writeWarning("Object '{}' is not parented".format(c.name))
             else:
@@ -1261,6 +1289,8 @@ def createEDMModel():
                         edmmodel.RenderNodes.append(r)
                     if type=='ShellNode':
                         edmmodel.ShellNodes.append(r)
+                    if type=='SegmentsNode':
+                        edmmodel.SegmentsNodes.append(r)
                     if type=='Connector':
                         edmmodel.Connectors.append(r)
                     if type=='Light':
@@ -1410,7 +1440,7 @@ def createEDMModel():
 
 def prepareObjects():
     for c in bpy.data.objects:
-        if c.type=='MESH':
+        if c.type=='MESH' and not c.EDMRenderType=='SegmentsNode':
             calc_tan=True
             for p in c.data.polygons:
                 if  len(p.vertices) != 4 and len(p.vertices) != 3:
