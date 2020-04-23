@@ -6,6 +6,7 @@ class BlenderEDMOptions(bpy.types.PropertyGroup):
         items = [('RenderNode', 'RenderNode', 'none deformed mesh'), 
                 ('SkinNode', 'SkinNode', 'Bone-defomed mesh'),
                 ('ShellNode', 'ShellNode', 'Collisionbox'),
+                ('SegmentsNode', 'SegmentsNode', 'SegmentsNode'),
                 ('None', 'None','Nothing')],
         name = "RenderType",
         default='None')
