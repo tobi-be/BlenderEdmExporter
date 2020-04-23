@@ -53,8 +53,7 @@ class ExportEDMFile(bpy.types.Operator,ExportHelper):
             msg = "Export to EDM failed"
             exportErrorStr = getEDMError()
             if (len(exportErrorStr)):
-                msg = msg + ": "+exportErrorStr
-            self.report({'ERROR'}, msg)
+                bpy.ops.edmexporter.messagebox('INVOKE_DEFAULT', message=msg + ": " + exportErrorStr)
         #logfile.close()
         return resultVal
 
