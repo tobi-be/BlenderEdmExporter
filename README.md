@@ -19,12 +19,12 @@ What should work:
 
 - Mesh export 
 - Collision boxes
-- Bone deformed animations
+- Collision lines
+- Argument based animations of Visibility, Rotation, Location, Scale and Bone deformation
 - A selection of material types including diffuse, normal and specular maps. roughmet textures can be added later
 - FakeOmniLights
-- Connectors
-- Argument based animations of Visibility, Rotation, Location, Scale and bone deformation
 - Lights  
+- Connectors
 
 what doesn‘ t work:
 ------------------
@@ -59,10 +59,11 @@ Use quaternions always
 
 Other rotation representations are not supported
 
-Read the System Console
+Read messageboxes and the system console
 -----------------------
 
-Window→Toggle System Console. You should get hints there if somethings goes wrong 
+If there is a problem with your model the exporter complains about it with messageboxes. The messageboxes describe the problem and should help you fix the problem. Additionally the warnings/errors are printed to the system console. There you can read them again later: 
+Window→Toggle System Console. 
 
 Bone Layers
 -----------
@@ -101,6 +102,11 @@ ShellNode
 
 A ShellNode are the collision boxes in EDM files mesh object. ShellNodes have to be parented to a bone and can be animated (rotation and translation) by animating its bone. 
 
+Collision lines
+---------------
+
+Collision lines are modelled with SegmentsNodes as the rendertype. Segmentsnodes have to be parented to a bone and can be animated by animating its bone. To create collision lines create a mesh object and parent it to a bone. Every edge of the mesh is exported as a line segmentof the collision line.
+
 SkinNode
 --------
 A SkinNode is a bone deformed Mesh used for infantry, pilots, driver or cows. 
@@ -122,6 +128,11 @@ FakeOmniLight
 -------------
 
 To place a FakeOmniLight in the edm model, you have to place an empty-object in Blender and choose FakeOmniLight in the EDM-Panel. Position offset is an offset relative to the position of the empty. Scale is the size of the fake light, UV1 and UV2 are the uv-coords (left bottom and right top) in the texture defined by filename. Shift to cam moves the fake light on an axis pointing from the position of the fake light and the viewer. 
+
+Light
+-----
+
+To place a light in the edm model, you have to place an empty-object and choose Light as Emptytype. The color of the emitted light is specified in RGB. You can also adjust brightness and distance. If you enable spotlight you can adjust the opening angle of the spot with theta. 
 
 Animation
 ---------
