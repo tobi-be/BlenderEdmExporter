@@ -40,11 +40,22 @@ class ExportEDMFile(bpy.types.Operator,ExportHelper):
             bpy.ops.object.mode_set(mode='OBJECT')
         prepareObjects()
         edmmodel=createEDMModel()
+        resultVal={'CANCELLED'}
         if edmmodel!=None:
             edmmodel.write( self.filepath )
+            warningStrs = getEDMWarnings()
+            if len(warningStrs):
+                bpy.ops.edmexporter.messagebox('INVOKE_DEFAULT', message="Export finished with next warnings:", wrnlist='|'.join(warningStrs))
             print("Finished")
+            resultVal={'FINISHED'}
+            self.report({'INFO'},"Export to EDM finished.")
+        else:
+            msg = "Export to EDM failed"
+            exportErrorStr = getEDMError()
+            if (len(exportErrorStr)):
+                bpy.ops.edmexporter.messagebox('INVOKE_DEFAULT', message=msg + ": " + exportErrorStr)
         #logfile.close()
-        return {'FINISHED'}
+        return resultVal
 
 def menu_function_export(self, context):
     self.layout.operator(ExportEDMFile.bl_idname,
