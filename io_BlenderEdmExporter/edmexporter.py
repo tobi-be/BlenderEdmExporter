@@ -891,7 +891,7 @@ class SegmentsNode:
         self.segments=[]
         for e in mesh.edges:
             self.segments.append([mesh.vertices[e.vertices[0]].co,mesh.vertices[e.vertices[1]].co])
-        print(len(self.segments))
+        #print(len(self.segments))
     def write(self,file):
         writeNodeBase(file,self)
         writeUInt(file,self.parentData)
@@ -899,8 +899,8 @@ class SegmentsNode:
         for i in self.segments:
             writeVec3f(file,i[0])
             writeVec3f(file,i[1])
-            print(i[0])
-            print(i[1])
+            #print(i[0])
+            #print(i[1])
 
 class EDMModel:
     def __init__(self):
@@ -1146,7 +1146,7 @@ def hasMaterial(obj):
 def meshIsOk(obj):
     me=obj.data
     if len(me.uv_layers)==0:
-        print("No UV-Map no export")
+        writeWarning("'{}' Mesh has no UV-Map. Mesh is not exported".format(obj.name))
         return False
     for p in me.polygons:
         if  len(p.vertices) != 4 and len(p.vertices) != 3:

@@ -5,7 +5,7 @@ class EDMMessageBox(bpy.types.Operator):
     bl_label = ""
     bl_options = {'REGISTER', 'INTERNAL'}
 
-    message = bpy.props.StringProperty(
+    message: bpy.props.StringProperty(
         name = "message",
         description = "Message text",
         default = ''
@@ -17,7 +17,7 @@ class EDMMessageBox(bpy.types.Operator):
     #     default = 'INFO'
     # )
 
-    wrnlist = bpy.props.StringProperty(
+    wrnlist: bpy.props.StringProperty(
         name = "wrnlist",
         description = "List of warning strings separated by |",
         default = ""

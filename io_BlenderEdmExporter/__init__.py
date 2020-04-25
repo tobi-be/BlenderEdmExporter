@@ -25,7 +25,7 @@ if "bpy" in locals():
 class ExportEDMFile(bpy.types.Operator,ExportHelper):
     bl_idname = "exportedm.edm"        # Unique identifier for buttons and menu items to reference.
     bl_label = "Export EDM"         # Display name in the interface.
-    bl_options = {'UNDO'}  # Enable undo for the operator.
+    #bl_options = {}  
     filename_ext = ".edm"
 
     filter_glob: bpy.props.StringProperty(
