@@ -14,6 +14,13 @@ Install:
 - Blender: Go to Edit->Preferences->Add-Ons, press install and choose downloaded zip file 
 - Activate the add-on
 
+Use full links:
+----------------
+
+Tutorial: https://www.youtube.com/watch?v=SYvr_GLR2AE&t=57s  thanks Grajo
+
+DCS Forum: https://forums.eagle.ru/showthread.php?t=268003 
+
 What should work:
 ------------------
 
@@ -37,7 +44,7 @@ what doesn‘ t work:
 
 known issues
 ------------
-- Sometimes UV-Maps aren't exported correctly. This happens more often if you have just left edit mode and export afterwards. Exporting again solves the problem 
+- In pose mode at bone properties at relations is an option named Relative Parenting. You should enable it. Otherwise objects will be exported at wrong positions.
 - Don't use seperation by selection or similar. This seems to mess up everything. Duplicate the object and remove everything you don't need.
 - Don't use fake user armatures.
 
