@@ -14,7 +14,7 @@ Install:
 - Blender: Go to Edit->Preferences->Add-Ons, press install and choose downloaded zip file 
 - Activate the add-on
 
-Use full links:
+Usefull links:
 ----------------
 
 Tutorial: https://www.youtube.com/watch?v=SYvr_GLR2AE&t=57s  thanks Grajo
