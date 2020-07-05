@@ -17,9 +17,10 @@ Install:
 Usefull links:
 ----------------
 
-Tutorial: https://www.youtube.com/watch?v=SYvr_GLR2AE&t=57s  thanks Grajo
+Tutorialplaylist: https://www.youtube.com/playlist?list=PLj_mUHDsU9x7hARVZsA1JilXWnTxJ4PpD  thanks Grajo!
 
-DCS Forum: https://forums.eagle.ru/showthread.php?t=268003 
+DCS Forum about the exporter: https://forums.eagle.ru/showthread.php?t=268003 
+DCS Forum about ingame integration: https://forums.eagle.ru/showthread.php?t=277572
 
 What should work:
 ------------------
@@ -33,7 +34,7 @@ What should work:
 - Lights  
 - Connectors
 
-what doesn‘ t work:
+What doesn‘t work:
 ------------------
 
 - Import EDM models
@@ -42,9 +43,11 @@ what doesn‘ t work:
 - Export of modifiers
 - Export of IK chains. Bones which are animated within an IK Chain has to be keyframed additionally by visual rotation or visual location
 
-known issues
+Known issues
 ------------
+- If you add animations or additional skinnodes the modelviewer has to be restarted to load the model properly.
 - In pose mode at bone properties at relations is an option named Relative Parenting. You should enable it. Otherwise objects will be exported at wrong positions.
+- Make shure the root bone is not deforming. Otherwise it will lead to an error when using skin nodes  (Edit mode-> Bone Properties-> Deform no)
 - Don't use seperation by selection or similar. This seems to mess up everything. Duplicate the object and remove everything you don't need.
 - Don't use fake user armatures.
 
@@ -118,6 +121,7 @@ SkinNode
 --------
 A SkinNode is a bone deformed Mesh used for infantry, pilots, driver or cows. 
 Workflow to create a SkinNode would be: 
+- Make shure the root bone is not deforming.
 - Create the mesh and choose SkinNode at EDM-Panel, setup material parameters and UV-map
 - Apply tranformation of the mesh object.
 - Prepare the armature. In Blender every bone has the property „Deform“ in Bone Properties. If you want to use a SkinNode you should disable this option on every bone which should not deform the mesh. 
@@ -125,6 +129,7 @@ Workflow to create a SkinNode would be:
 
 SkinNodes in DCS uses up to 4 bone weights per vertex. In Blender you have to limit the number of weights to 4 to get a proper export. This can be done in weight paint mode at weights→limit total. You have to assign a material to the mesh object. (this is just a dummy right now but it has to be done)
 There might be some problems with exporting Skinnodes. I would be happy about every  description of problems.
+If something is not working properly and you want to begin from scratch you should should delete the vertexgroups, which are created by using "parent with automatic weights"
 
 Connectors
 ----------
