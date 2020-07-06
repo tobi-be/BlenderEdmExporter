@@ -97,11 +97,18 @@ In object mode: select mesh object first, add armature to selection, go to pose 
 Supported Features
 ==================
 
+Bounding Box and User Box
+-------------------------
+
+By default user box and Bounding Box are calculated by the overall dimensions of your model. In some cases you need to adjust them. For example for cargo objects or if an animation leads to greater dimensions. You can adjust them by selecting the armature. In the object properties -> EDM Panel you can choos if you want to uses calculated boxes or if you want to define them directly. In the second case you can the coordinates of the low, left, rear corner(min) and he right, upper, front corner (max)
+
 Materials
 ---------
 
 As a first approach, the EDM panel offers material properties that are present in the existing EDM files. The settings are independent of the Blender materials and have no influence on the appearance in Blender. Also, the Blender internal material properties have no influence on the exported EDM model. First you have to select a general material type. The type names should be almost self-explanatory. The most commonly used material type should be Solid (def_material in  EDM files). I have not spent much time with the different types and their appearance. Therefore I would not write much here, just a short description of the application and wish every user a lot of fun while experimenting.
 Each material has a diffuse color map. The name of the texture to be used must be entered in the filename field. In general, textures are always entered without file names. If you want to use "texture.png" there must be "texture" there. Using Normalmaps and specular maps is optional. If you want to use _roughmet textures you have to enable a specular map. (See: https://forums.eagle.ru/showthread.php?t=193596 )
+
+There is a new experimental WIP feature of the transparent-self-illuminated material. You can add animated illumination values. You have to choose the animation argument in the EDM Panel. There you can keyframe the illumination value by pressing I when the mouse is over the field of the value. The curves of the added keyframes won't appear at the action editor but when you choose dopesheet in the dropdownmenu of the dopesheet-viewer. You also don't have to create an action for that like you have to when you want to animate bones.
 
 RenderNode
 ----------
@@ -116,7 +123,7 @@ A ShellNode are the collision boxes in EDM files mesh object. ShellNodes have to
 Collision lines
 ---------------
 
-Collision lines are modelled with SegmentsNodes as the rendertype. Segmentsnodes have to be parented to a bone and can be animated by animating its bone. To create collision lines create a mesh object and parent it to a bone. Every edge of the mesh is exported as a line segmentof the collision line.
+Collision lines are modelled with SegmentsNodes as the rendertype. Segmentsnodes have to be parented to a bone and can be animated by animating its bone. To create collision lines create a mesh object and parent it to a bone. Every edge of the mesh is exported as a line segment of the collision line.
 
 SkinNode
 --------
