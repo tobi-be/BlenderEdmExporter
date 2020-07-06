@@ -2,6 +2,27 @@ import bpy
 
 
 class BlenderEDMOptions(bpy.types.PropertyGroup):
+    bpy.types.Armature.EDMAutoCalcBoxes=bpy.props.BoolProperty(
+        name="Use Calculated Bounding Boxes",
+        default=True)
+    bpy.types.Armature.EDMUserBoxMin=bpy.props.FloatVectorProperty(
+        name="Min",
+        default=(-10.0,-10.0,-10.0),
+        #min=0.0,
+        #max=1.0,
+        size=3)
+    bpy.types.Armature.EDMUserBoxMax=bpy.props.FloatVectorProperty(
+        name="Max",
+        default=(10.0,10.0,10.0),
+        size=3)
+    bpy.types.Armature.EDMBoundingBoxMin=bpy.props.FloatVectorProperty(
+        name="Min",
+        default=(-10.0,-10.0,-10.0),
+        size=3)
+    bpy.types.Armature.EDMBoundingBoxMax=bpy.props.FloatVectorProperty(
+        name="Max",
+        default=(10.0,10.0,10.0),
+        size=3)
     bpy.types.Object.EDMRenderType= bpy.props.EnumProperty(
         items = [('RenderNode', 'RenderNode', 'none deformed mesh'), 
                 ('SkinNode', 'SkinNode', 'Bone-defomed mesh'),
@@ -106,11 +127,15 @@ class BlenderEDMOptions(bpy.types.PropertyGroup):
         default=0.2,
         min=0.0,
         max=1.0)
+    bpy.types.Material.EDMSelfIlluminationArgument=bpy.props.IntProperty(
+        name="Animation Argument",
+        default=0,
+        min=0)       
     bpy.types.Material.EDMSelfIllumination=bpy.props.FloatProperty(
         name="Self Illumination Value",
         default=1,
         min=0.0,
-        max=10.0)
+        max=100.0)
     bpy.types.Material.EDMUseNormalMap=bpy.props.BoolProperty(
         name="Use normalmap",
         default = False)

@@ -126,6 +126,8 @@ class EDMAnimationData:
         writeDouble(file,self.frame)
         if isinstance(self.value, mathutils.Quaternion):
             writeQuaternion(file,self.value)
+        if isinstance(self.value, float):
+            writeFloat(file,self.value)            
         if isinstance(self.value, mathutils.Vector):
             writeVec3d(file,self.value)
 
@@ -173,6 +175,23 @@ class EDMProperty:
             writeVec2f(file,self.value)
         if self.type=="model::Property<osg::Vec3f>":
             writeVec3f(file,self.value)
+            
+            
+            
+class EDMAnimatedProperty:
+    NAnimatedFloat=0
+    def __init__(self,name,type,data):
+        self.name=name
+        self.type=type
+        self.data=data
+        if self.type=="model::AnimatedProperty<float>":
+            EDMAnimatedProperty.NAnimatedFloat+=1
+    def write(self,file):
+        print("write Animated Bla")
+        writeUInt(file,getStringIndex(self.type))
+        writeUInt(file,getStringIndex(self.name))
+        if self.type=="model::AnimatedProperty<float>":
+            self.data.write(file)
 
 class EDMTexture:
     N=0
@@ -241,6 +260,7 @@ class EDMFakeLightMaterial:
 
 class EDMMaterial:
     NPropertiesSets=0
+    MaterialActionIndex=0
     def __init__(self,material,weights):
         self.sourcematerial=material
         self.nameIndex=0 #setzen
@@ -259,6 +279,28 @@ class EDMMaterial:
         self.TextureCoordinateChannels[0]=0
         self.Blending=0 #char
         self.materialName=""
+      
+        self.animatedSelfIlluminationData=None
+        if material.animation_data!=None:
+            action=material.animation_data.action
+            if action!=None:
+                for fcu in action.fcurves:
+                    if fcu.data_path=="EDMSelfIllumination":
+                        ok=True
+                        print("Selfillum gefunde")
+                        tMin,tMax=action.frame_range
+                        if tMin!=tMax:
+                            b=2.0/(tMax-tMin)
+                        else:
+                            b=1
+                        a=-tMin*b-1.0 
+                        data=[]
+                        for points in fcu.keyframe_points:
+                            frame=a+b*points.co[0] #range anpassen
+                            data.append(EDMAnimationData(frame,points.co[1]))
+                        if material.EDMSelfIlluminationArgument+1>EDMMaterial.MaterialActionIndex:
+                            EDMMaterial.MaterialActionIndex=material.EDMSelfIlluminationArgument+1
+                        self.animatedSelfIlluminationData=EDMAnimatedProperty("selfIlluminationValue","model::AnimatedProperty<float>",EDMAnimationSet(material.EDMSelfIlluminationArgument,data,[]))
         if weights:
             self.VertexFormat[21]=4
         if material.EDMMaterialType=='Glass':
@@ -274,8 +316,11 @@ class EDMMaterial:
             self.uniforms.append(EDMProperty("selfIlluminationValue", "model::Property<float>" ,material.EDMSelfIllumination))
         if material.EDMMaterialType=='transp_self_illu':
             self.materialName="transparent_self_illum_material"
-            self.uniforms.append(EDMProperty("selfIlluminationValue", "model::Property<float>" ,material.EDMSelfIllumination))
             self.Blending=1 #char
+            if self.animatedSelfIlluminationData==None:
+                self.uniforms.append(EDMProperty("selfIlluminationValue", "model::Property<float>" ,material.EDMSelfIllumination))
+            else:
+                self.animatedUniforms.append(self.animatedSelfIlluminationData)
         if material.EDMMaterialType=='bano':
             self.materialName="bano_material"
             self.uniforms.append(EDMProperty("selfIlluminationValue", "model::Property<float>" ,material.EDMSelfIllumination))
@@ -346,6 +391,8 @@ class RootNode:
         self.type = "model::RootNode"
         self.BoundingMin=mathutils.Vector([0,0,0]) #???
         self.BoundingMax=mathutils.Vector([0,0.0,0.0]) #???
+        self.UserMin=mathutils.Vector([0,0,0]) #???
+        self.UserMax=mathutils.Vector([0,0.0,0.0]) #???
         self.u1=mathutils.Vector([1.0e38,1.0e38,1.0e38])
         self.u2=mathutils.Vector([-1.0e38, -1.0e38, -1.0e38])
         self.materials=[]
@@ -369,8 +416,8 @@ class RootNode:
         writeNodeBase(file,self)
         writeVec3d(file,self.BoundingMin)
         writeVec3d(file,self.BoundingMax)
-        writeVec3d(file,self.BoundingMin)
-        writeVec3d(file,self.BoundingMax)
+        writeVec3d(file,self.UserMin)
+        writeVec3d(file,self.UserMax)
         writeVec3d(file,self.u1)
         writeVec3d(file,self.u2)
         writeUInt(file, len(self.materials))
@@ -1248,9 +1295,6 @@ def createEDMModel():
         if c.type=='EMPTY':
             type=c.EDMEmptyType
         if c.type=='MESH':
-            #c.to_mesh(preserve_all_data_layers=True, depsgraph=None)
-            #c.update_from_editmode()
-            #c.data.validate(verbose=True, clean_customdata=False)
             edmmodel.rootNode.updateBoundingBox(c)
             type=c.EDMRenderType
         if type=='RenderNode':
@@ -1264,12 +1308,16 @@ def createEDMModel():
             edmmodel.rootNode.materials.append(r.material)
         if type=='ShellNode':
             r=ShellNode(c)
+            edmmodel.rootNode.updateBoundingBox(c)            
         if type=='SegmentsNode':
             r=SegmentsNode(c)
+            edmmodel.rootNode.updateBoundingBox(c)            
         if type=='Connector':
             r=ConnectorNode(c)
+            edmmodel.rootNode.updateBoundingBox(c)   
         if type=='Light':
             r=EDMLight(c)
+            edmmodel.rootNode.updateBoundingBox(c)   
         if type=='RenderNode' or type=='ShellNode' or type=='SegmentsNode' or type=='Connector' or type=='FakeOmniLight' or type=='Light':
             if c.parent_bone=="":
                 writeWarning("Object '{}' is not parented".format(c.name))
@@ -1302,6 +1350,7 @@ def createEDMModel():
                 r=SkinNode(c,boneid)
                 edmmodel.rootNode.materials.append(r.material)
                 edmmodel.SkinNodes.append(r)
+                edmmodel.rootNode.updateBoundingBox(c)   
         if type!='Connector'and type!='SkinNode':
             fcu,argument= getVisibilityFCurve(c)
             if fcu !=None:
@@ -1432,7 +1481,16 @@ def createEDMModel():
                     edmmodel.nodes[boneid[name]].scaleAnimations.append(EDMAnimationSet(action.animationArgument,data2,data))
                     if action.animationArgument+1>actionindex:
                         actionindex=action.animationArgument+1
-
+    if armature.data.EDMAutoCalcBoxes:
+        edmmodel.rootNode.UserMin=edmmodel.rootNode.BoundingMin
+        edmmodel.rootNode.UserMax=edmmodel.rootNode.BoundingMax
+    else:
+        mat=mathutils.Matrix.Rotation(-radians(90.0), 3, 'Z') @mathutils.Matrix.Rotation(-radians(90.0), 3, 'Y') @  mathutils.Matrix.Identity(3)
+        edmmodel.rootNode.UserMin=mat@mathutils.Vector(armature.data.EDMUserBoxMin)
+        edmmodel.rootNode.UserMax=mat@mathutils.Vector(armature.data.EDMUserBoxMax)
+        edmmodel.rootNode.BoundingMin=mat@mathutils.Vector(armature.data.EDMBoundingBoxMin)
+        edmmodel.rootNode.BoundingMax=mat@mathutils.Vector(armature.data.EDMBoundingBoxMax)
+        
     edmmodel.rootNode.NAnimationArgs=actionindex+1
     return edmmodel
 

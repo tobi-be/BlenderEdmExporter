@@ -20,6 +20,24 @@ class EDMObjectPanel(bpy.types.Panel):
         layout = self.layout
         box = layout.box()
         #print(context.object.type)
+        if context.object.type=='ARMATURE':
+            box.prop(bpy.context.object.data, 'EDMAutoCalcBoxes')
+            if bpy.context.object.data.EDMAutoCalcBoxes==False:
+                box2=layout.box()
+                box2.label(text="User Box:")
+                row = box2.row(align = True)
+                colleft=row.column(align=False)
+                colleft.prop(bpy.context.object.data,'EDMUserBoxMin')
+                colright=row.column(align=False)
+                colright.prop(bpy.context.object.data,'EDMUserBoxMax')
+                box3=layout.box()
+                box3.label(text="Bounding Box:")
+                row2 = box3.row(align = True)
+                colleft2=row2.column(align=False)
+                colleft2.prop(bpy.context.object.data,'EDMBoundingBoxMin')
+                colright2=row2.column(align=False)
+                colright2.prop(bpy.context.object.data,'EDMBoundingBoxMax')
+        
         if context.object.type=='MESH':
             box.prop(bpy.context.object, 'EDMRenderType')
             type=bpy.context.object.EDMRenderType
@@ -41,10 +59,11 @@ class EDMObjectPanel(bpy.types.Panel):
                     col = materialBox.column(align = True)
                     if material.EDMMaterialType=='transp_self_illu':
                         col.prop(material,'EDMSelfIllumination')
+                        col.prop(material,'EDMSelfIlluminationArgument')
                     if material.EDMMaterialType=='self_illu':
                         col.prop(material,'EDMSelfIllumination')
                     if material.EDMMaterialType=='bano':
-                        col.prop(material,'EDMSelfIllumination')                            
+                        col.prop(material,'EDMSelfIllumination')
                     if material.EDMMaterialType=='Solid':
                         col.prop(material,'EDMUseNormalMap')
                         if material.EDMUseNormalMap:
