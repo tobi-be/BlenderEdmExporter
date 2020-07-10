@@ -46,6 +46,8 @@ What doesn‘t work:
 
 Known issues
 ------------
+
+- Renaming bones after creating animation actions leads to errors. It is best to give all the final bone-names before you start animating
 - If you add animations or additional skinnodes the modelviewer has to be restarted to load the model properly.
 - In pose mode at bone properties at relations is an option named Relative Parenting. You should enable it. Otherwise objects will be exported at wrong positions.
 - Make shure the root bone is not deforming. Otherwise it will lead to an error when using skin nodes  (Edit mode-> Bone Properties-> Deform no)
