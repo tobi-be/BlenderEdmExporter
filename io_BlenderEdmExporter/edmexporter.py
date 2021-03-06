@@ -4,7 +4,7 @@ import mathutils
 import tempfile
 import bmesh
 from math import radians
-
+from .edmutils import* 
 printnodes=False
 stringLookUp=[]
 warningStrs=[]
@@ -129,7 +129,10 @@ class EDMAnimationData:
         if isinstance(self.value, float):
             writeFloat(file,self.value)            
         if isinstance(self.value, mathutils.Vector):
-            writeVec3d(file,self.value)
+            if len(self.value)==3:
+                writeVec3d(file,self.value)
+            if len(self.value)==2:
+                writeVec2f(file,self.value)
 
 class EDMAnimationSet:
     def __init__(self,argument,data1,data2):
@@ -191,6 +194,8 @@ class EDMAnimatedProperty:
         writeUInt(file,getStringIndex(self.type))
         writeUInt(file,getStringIndex(self.name))
         if self.type=="model::AnimatedProperty<float>":
+            self.data.write(file)
+        if self.type=="model::AnimatedProperty<osg::Vec2f>":
             self.data.write(file)
 
 class EDMTexture:
@@ -269,26 +274,36 @@ class EDMMaterial:
         self.uniforms=[]
         self.animatedUniforms=[]
         self.textures=[]
-        self.TextureCoordinateChannels=[-1 for i in range(12)] #ints
+        self.TextureCoordinateChannels=[-1 for i in range(13)] #ints
         self.VertexFormat=[0 for i in range(26)] #chars
         self.VertexFormat[0]=4
         self.VertexFormat[4]=2 #uvs
         self.shadows=3 #??
         self.DepthBias=0 #Uint
-        self.textures.append(EDMTexture(0,material.EDMDiffuseMapName))# always?
-        self.TextureCoordinateChannels[0]=0
         self.Blending=0 #char
         self.materialName=""
+        self.VertexFormat[1]=0
+        self.VertexFormat[3]=0
+        self.VertexFormat[2]=0
+        self.VertexFormat[3]=0
       
         self.animatedSelfIlluminationData=None
+        self.animatedDiffuseShiftData=None
+        self.animatedNormalShiftData=None
+        DiffuseShiftFcus=[]
+        NormalShiftFcus=[]
         if material.animation_data!=None:
             action=material.animation_data.action
             if action!=None:
                 for fcu in action.fcurves:
                     if fcu.data_path=="EDMSelfIllumination":
                         ok=True
-                        print("Selfillum gefunde")
-                        tMin,tMax=action.frame_range
+                        #print("Selfillum gefunde")
+                        if action.EDMAutoRange:
+                            tMin,tMax=action.frame_range
+                        else:
+                            tMin=action.EDMStartFrame
+                            tMax=action.EDMEndFrame
                         if tMin!=tMax:
                             b=2.0/(tMax-tMin)
                         else:
@@ -301,57 +316,268 @@ class EDMMaterial:
                         if material.EDMSelfIlluminationArgument+1>EDMMaterial.MaterialActionIndex:
                             EDMMaterial.MaterialActionIndex=material.EDMSelfIlluminationArgument+1
                         self.animatedSelfIlluminationData=EDMAnimatedProperty("selfIlluminationValue","model::AnimatedProperty<float>",EDMAnimationSet(material.EDMSelfIlluminationArgument,data,[]))
+                    if fcu.data_path=="EDMDiffuseShift":
+                        ok=True
+                        DiffuseShiftFcus.append(fcu)
+
+                
+                if len(DiffuseShiftFcus)==2:
+                    if action.EDMAutoRange:
+                        tMin,tMax=action.frame_range
+                    else:
+                        tMin=action.EDMStartFrame
+                        tMax=action.EDMEndFrame
+                    if tMin!=tMax:
+                        b=2.0/(tMax-tMin)
+                    else:
+                        b=1
+                    a=-tMin*b-1.0
+                    data=[]
+                    for i in range(len(DiffuseShiftFcus[0].keyframe_points)):
+                        frame=a+b*DiffuseShiftFcus[0].keyframe_points[i].co[0] #range anpassen
+                        data.append(EDMAnimationData(frame,mathutils.Vector([DiffuseShiftFcus[0].keyframe_points[i].co[1],DiffuseShiftFcus[1].keyframe_points[i].co[1]])))
+                    if material.EDMDiffuseShiftArgument+1>EDMMaterial.MaterialActionIndex:
+                        EDMMaterial.MaterialActionIndex=material.EDMDiffuseShiftArgument+1
+                    self.animatedDiffuseShiftData=EDMAnimatedProperty("diffuseShift","model::AnimatedProperty<osg::Vec2f>",EDMAnimationSet(material.EDMDiffuseShiftArgument,data,[]))
+                
         if weights:
             self.VertexFormat[21]=4
         if material.EDMMaterialType=='Glass':
             self.materialName="glass_material"
+            self.textures.append(EDMTexture(0,material.EDMDiffuseMapName))
+            self.TextureCoordinateChannels[0]=0
             self.Blending=1 #char
             self.VertexFormat[1]=3 #normals
             self.VertexFormat[2]=0
             self.VertexFormat[3]=0
-        if material.EDMMaterialType=='self_illu':
-            self.materialName="self_illum_material"
-            self.Blending=1 #char
-            self.VertexFormat[1]=3
-            self.uniforms.append(EDMProperty("selfIlluminationValue", "model::Property<float>" ,material.EDMSelfIllumination))
-        if material.EDMMaterialType=='transp_self_illu':
-            self.materialName="transparent_self_illum_material"
-            self.Blending=1 #char
-            if self.animatedSelfIlluminationData==None:
-                self.uniforms.append(EDMProperty("selfIlluminationValue", "model::Property<float>" ,material.EDMSelfIllumination))
+            if material.EDMUseDamageMap:
+                self.TextureCoordinateChannels[5]=0
+                self.textures.append(EDMTexture(5,material.EDMDamageMapName))
+            self.uniforms=[]
+            self.uniforms.append(EDMProperty("specPower", "model::Property<float>" ,material.EDMSpecularPower))
+            self.uniforms.append(EDMProperty("specFactor", "model::Property<float>", material.EDMSpecularFactor))
+            self.uniforms.append(EDMProperty("reflectionBlurring", "model::Property<float>", material.EDMReflectionBlurring))
+            self.uniforms.append(EDMProperty("reflectionValue", "model::Property<float>", material.EDMReflectionValue))
+            
+            self.uniforms.append(EDMProperty("diffuseValue", "model::Property<float>" ,material.EDMDiffuseValue))
+            if self.animatedDiffuseShiftData==None:
+                self.uniforms.append(EDMProperty("diffuseShift", "model::Property<osg::Vec2f>" ,material.EDMDiffuseShift))
             else:
-                self.animatedUniforms.append(self.animatedSelfIlluminationData)
-        if material.EDMMaterialType=='bano':
-            self.materialName="bano_material"
-            self.uniforms.append(EDMProperty("selfIlluminationValue", "model::Property<float>" ,material.EDMSelfIllumination))
-            self.Blending=1 #char
-            self.shadows=0
-            self.VertexFormat[1]=3
+                self.animatedUniforms.append(self.animatedDiffuseShiftData)
+            
         if material.EDMMaterialType=='Solid':
             self.materialName="def_material"
+            self.textures.append(EDMTexture(0,material.EDMDiffuseMapName))
+            self.TextureCoordinateChannels[0]=0
             self.VertexFormat[1]=3 #normals
-            if material.EDMUseAlpha:
+            if material.EDMBlending=='0':
+                self.Blending=0 #char
+            if material.EDMBlending=='1':
+                self.Blending=1 #char
+            if material.EDMBlending=='2':
                 self.Blending=2 #char
-            else:
-                self.Blending=0
-            if material.EDMUseSpecularMap:
-                self.textures.append(EDMTexture(2,material.EDMSpecularMapName))
-                self.uniforms.append(EDMProperty("specMapValue", "model::Property<float>" ,material.EDMSpecularMapValue))
-                self.TextureCoordinateChannels[2]=0
-            if material.EDMUseNormalMap and material.EDMMaterialType=='Solid':
+            if material.EDMBlending=='3':
+                self.Blending=3 #char
+            
+            if material.EDMShadows=='0':
+                self.SHADOWS=0 #char
+            if material.EDMShadows=='1':
+                self.SHADOWS=1 #char
+            if material.EDMShadows=='2':
+                self.SHADOWS=2 #char
+            if material.EDMShadows=='3':
+                self.SHADOWS=3 #char
+            
+            if material.EDMUseNormalMap:
                 self.VertexFormat[2]=3
                 self.VertexFormat[3]=3
                 self.textures.append(EDMTexture(1,material.EDMNormalMapName))
                 self.uniforms.append(EDMProperty("normalMapValue", "model::Property<float>" ,material.EDMNormalMapValue))
                 self.TextureCoordinateChannels[1]=0
-        if material.EDMMaterialType=='Glass' or material.EDMMaterialType =='Solid':
+            if material.EDMUseSpecularMap:
+                self.textures.append(EDMTexture(2,material.EDMSpecularMapName))
+                self.uniforms.append(EDMProperty("specMapValue", "model::Property<float>" ,material.EDMSpecularMapValue))
+                self.TextureCoordinateChannels[2]=0
+            
             self.uniforms.append(EDMProperty("specPower", "model::Property<float>" ,material.EDMSpecularPower))
             self.uniforms.append(EDMProperty("specFactor", "model::Property<float>", material.EDMSpecularFactor))
             self.uniforms.append(EDMProperty("reflectionBlurring", "model::Property<float>", material.EDMReflectionBlurring))
             self.uniforms.append(EDMProperty("reflectionValue", "model::Property<float>", material.EDMReflectionValue))
+            
+            self.uniforms.append(EDMProperty("diffuseValue", "model::Property<float>" ,material.EDMDiffuseValue))
+            if material.EDMUseDiffuseShift:
+                if self.animatedDiffuseShiftData==None:
+                    self.uniforms.append(EDMProperty("diffuseShift", "model::Property<osg::Vec2f>" ,material.EDMDiffuseShift))
+                else:
+                    self.animatedUniforms.append(self.animatedDiffuseShiftData)
+            if material.EDMUseDamageMap:
+                self.TextureCoordinateChannels[5]=0
+                self.textures.append(EDMTexture(5,material.EDMDamageMapName))
+                if material.EDMUseDamageNormalMap:
+                    self.TextureCoordinateChannels[10]=0
+                    self.textures.append(EDMTexture(10,material.EDMDamageNormalMapName))
+                    self.VertexFormat[24]=3
+                    self.VertexFormat[25]=3
+            if material.EDMUseSelfIllumination:
+                self.TextureCoordinateChannels[8]=0
+                self.textures.append(EDMTexture(8,material.EDMSelfIlluminationMapName))
+                if self.animatedSelfIlluminationData==None:
+                    self.uniforms.append(EDMProperty("selfIlluminationValue", "model::Property<float>" ,material.EDMSelfIllumination))
+                else:
+                    self.animatedUniforms.append(self.animatedSelfIlluminationData)
+            
+            
+        
+        if material.EDMMaterialType=='Mirror':
+            self.materialName="mirror_material"
+            self.textures.append(EDMTexture(0,material.EDMDiffuseMapName))
+            self.TextureCoordinateChannels[0]=0
+            self.VertexFormat[1]=3 #normals
+            self.shadows=1 #??
+            self.Blending=0 #char
+            if material.EDMUseNormalMap:
+                self.VertexFormat[2]=3
+                self.VertexFormat[3]=3
+                self.textures.append(EDMTexture(1,material.EDMNormalMapName))
+                self.uniforms.append(EDMProperty("normalMapValue", "model::Property<float>" ,material.EDMNormalMapValue))
+                self.TextureCoordinateChannels[1]=0
+            if material.EDMUseSpecularMap:
+                self.textures.append(EDMTexture(2,material.EDMSpecularMapName))
+                self.uniforms.append(EDMProperty("specMapValue", "model::Property<float>" ,material.EDMSpecularMapValue))
+                self.TextureCoordinateChannels[2]=0
+            
+            self.uniforms.append(EDMProperty("specPower", "model::Property<float>" ,material.EDMSpecularPower))
+            self.uniforms.append(EDMProperty("specFactor", "model::Property<float>", material.EDMSpecularFactor))
+            self.uniforms.append(EDMProperty("reflectionBlurring", "model::Property<float>", material.EDMReflectionBlurring))
+            self.uniforms.append(EDMProperty("reflectionValue", "model::Property<float>", material.EDMReflectionValue))
+            self.uniforms.append(EDMProperty("diffuseValue", "model::Property<float>", material.EDMDiffuseValue))
+            
+        if material.EDMMaterialType=='self_illu':
+            self.materialName="self_illum_material"
+            self.textures.append(EDMTexture(0,material.EDMDiffuseMapName))# always?
+            self.TextureCoordinateChannels[0]=0
+            self.Blending=0 #char
+            self.shadows=3
+            self.DepthBias=0
+            self.VertexFormat[1]=3 #normals
+            self.VertexFormat[4]=2 #uvs
+            if material.EDMUseNormalMap:
+                self.VertexFormat[2]=3
+                self.VertexFormat[3]=3
+                self.textures.append(EDMTexture(1,material.EDMNormalMapName))
+                self.uniforms.append(EDMProperty("normalMapValue", "model::Property<float>", material.EDMNormalMapValue))
+                self.TextureCoordinateChannels[1]=0
+            if material.EDMUseSpecularMap:
+                self.textures.append(EDMTexture(2,material.EDMSpecularMapName))
+                self.uniforms.append(EDMProperty("specMapValue", "model::Property<float>", material.EDMSpecularMapValue))
+                self.TextureCoordinateChannels[2]=0
+            if self.animatedSelfIlluminationData==None:
+                self.uniforms.append(EDMProperty("selfIlluminationValue", "model::Property<float>", material.EDMSelfIllumination))
+            else:
+                self.animatedUniforms.append(self.animatedSelfIlluminationData)
+            
+            if self.animatedDiffuseShiftData==None:
+                self.uniforms.append(EDMProperty("diffuseShift", "model::Property<osg::Vec2f>" ,material.EDMDiffuseShift))
+            else:
+                self.animatedUniforms.append(self.animatedDiffuseShiftData)      
+            
+            self.uniforms.append(EDMProperty("specPower", "model::Property<float>" ,material.EDMSpecularPower))
+            self.uniforms.append(EDMProperty("specFactor", "model::Property<float>", material.EDMSpecularFactor))
+            self.uniforms.append(EDMProperty("reflectionValue", "model::Property<float>", material.EDMReflectionValue))
+            self.uniforms.append(EDMProperty("selfIlluminationColor", "model::Property<osg::Vec3f>" ,material.EDMIlluminationColor))
+            self.uniforms.append(EDMProperty("multiplyDiffuse", "model::Property<float>" ,material.EDMmultiplyDiffuse))
+            self.uniforms.append(EDMProperty("phosphor", "model::Property<float>" ,material.EDMPhosphor))
+            
+            
+        if material.EDMMaterialType=='transp_self_illu':
+            self.materialName="transparent_self_illum_material"
+            self.textures.append(EDMTexture(0,material.EDMDiffuseMapName))
+            self.TextureCoordinateChannels[0]=0
+            self.VertexFormat[4]=2 #uvs
+            if material.EDMSumBlend:
+                self.Blending=3
+            else:
+                self.Blending=1
+            
+            if self.animatedSelfIlluminationData==None:
+                self.uniforms.append(EDMProperty("selfIlluminationValue", "model::Property<float>" ,material.EDMSelfIllumination))
+            else:
+                self.animatedUniforms.append(self.animatedSelfIlluminationData)
+            if material.EDMUseDiffuseShift:
+                if self.animatedDiffuseShiftData==None:
+                    self.uniforms.append(EDMProperty("diffuseShift", "model::Property<osg::Vec2f>" ,material.EDMDiffuseShift))
+                else:
+                    self.animatedUniforms.append(self.animatedDiffuseShiftData)
 
-        self.uniforms.append(EDMProperty("diffuseValue", "model::Property<float>" ,material.EDMDiffuseValue))
-        self.uniforms.append(EDMProperty("diffuseShift", "model::Property<osg::Vec2f>" ,mathutils.Vector([0.0,0.0])))
+            self.uniforms.append(EDMProperty("diffuseValue", "model::Property<float>" ,material.EDMDiffuseValue))
+            #self.uniforms.append(EDMProperty("diffuseShift", "model::Property<osg::Vec2f>" ,mathutils.Vector([0.0,0.0])))
+        if material.EDMMaterialType=='additive_self_illu':
+            self.materialName="additive_self_illum_material"
+            self.textures.append(EDMTexture(0,material.EDMDiffuseMapName))# always?
+            self.TextureCoordinateChannels[0]=0
+            self.Blending=3 #char
+            self.shadows=0
+            self.DepthBias=0
+            self.VertexFormat[1]=3 #normals
+            self.VertexFormat[4]=2 #uvs
+            
+            if material.EDMUseNormalMap:
+                self.VertexFormat[2]=3
+                self.VertexFormat[3]=3
+                self.textures.append(EDMTexture(1,material.EDMNormalMapName))
+                self.uniforms.append(EDMProperty("normalMapValue", "model::Property<float>" ,material.EDMNormalMapValue))
+                self.TextureCoordinateChannels[1]=0
+            if material.EDMUseSpecularMap:
+                self.textures.append(EDMTexture(2,material.EDMSpecularMapName))
+                self.uniforms.append(EDMProperty("specMapValue", "model::Property<float>" ,material.EDMSpecularMapValue))
+                self.TextureCoordinateChannels[2]=0
+            if self.animatedSelfIlluminationData==None:
+                self.uniforms.append(EDMProperty("selfIlluminationValue", "model::Property<float>" ,material.EDMSelfIllumination))
+            else:
+                self.animatedUniforms.append(self.animatedSelfIlluminationData)
+            if material.EDMUseDiffuseShift:
+                if self.animatedDiffuseShiftData==None:
+                    self.uniforms.append(EDMProperty("diffuseShift", "model::Property<osg::Vec2f>" ,material.EDMDiffuseShift))
+                else:
+                    self.animatedUniforms.append(self.animatedDiffuseShiftData)
+                
+            self.uniforms.append(EDMProperty("specPower", "model::Property<float>" ,material.EDMSpecularPower))
+            self.uniforms.append(EDMProperty("specFactor", "model::Property<float>", material.EDMSpecularFactor))
+            self.uniforms.append(EDMProperty("reflectionValue", "model::Property<float>", material.EDMReflectionValue))
+            self.uniforms.append(EDMProperty("selfIlluminationColor", "model::Property<osg::Vec3f>" ,material.EDMIlluminationColor))
+            self.uniforms.append(EDMProperty("diffuseValue", "model::Property<float>" ,material.EDMDiffuseValue))
+            self.uniforms.append(EDMProperty("multiplyDiffuse", "model::Property<float>" ,material.EDMmultiplyDiffuse))
+            self.uniforms.append(EDMProperty("phosphor", "model::Property<float>" ,material.EDMPhosphor))
+        if material.EDMMaterialType=='bano':
+            self.materialName="bano_material"
+            self.textures.append(EDMTexture(0,material.EDMDiffuseMapName))
+            self.TextureCoordinateChannels[0]=0
+            self.VertexFormat[1]=3 #normals
+            self.VertexFormat[4]=2 #uvs
+            self.uniforms.append(EDMProperty("selfIlluminationValue", "model::Property<float>" ,material.EDMSelfIllumination))
+            self.Blending=3 #char
+            self.shadows=0
+            self.DepthBias=0
+            self.uniforms.append(EDMProperty("diffuseValue", "model::Property<float>" ,material.EDMDiffuseValue))
+            #self.uniforms.append(EDMProperty("diffuseShift", "model::Property<osg::Vec2f>" ,material.EDMDiffuseShift))
+            self.uniforms.append(EDMProperty("banoDistCoefs", "model::Property<osg::Vec3f>" ,material.EDMBanoDistCoefs))
+        if material.EDMMaterialType=='forest':
+            self.materialName="forest_material"
+            self.textures.append(EDMTexture(0,material.EDMDiffuseMapName))
+            self.TextureCoordinateChannels[0]=0
+            self.VertexFormat[4]=2 #uvs
+            self.Blending=2 #char
+            self.shadows=0
+            self.DepthBias=0
+            
+            self.uniforms.append(EDMProperty("specPower", "model::Property<float>" ,0))
+            self.uniforms.append(EDMProperty("reflectionValue", "model::Property<float>", 0))
+            self.uniforms.append(EDMProperty("selfIlluminationValue", "model::Property<float>", 0))
+            self.uniforms.append(EDMProperty("diffuseValue", "model::Property<float>" ,0.75))
+            self.uniforms.append(EDMProperty("specFactor", "model::Property<float>", 30))
+            
+        
+        
         EDMMaterial.NPropertiesSets+=1
 
     def write(self,file):
@@ -365,8 +591,8 @@ class EDMMaterial:
         for i in range(26):
             writeUChar(file,self.VertexFormat[i])
         writeUInt(file,getStringIndex("TEXTURE_COORDINATES_CHANNELS"))
-        writeUInt(file,12)
-        for i in range(12):
+        writeUInt(file,13)
+        for i in range(13):
             writeInt(file,self.TextureCoordinateChannels[i])
         writeUInt(file,getStringIndex("MATERIAL_NAME"))
         writeUInt(file,getStringIndex(self.materialName))
@@ -679,7 +905,7 @@ class EDMVertex:
                 self.groups[i]=self.groups[i]
         self.uv=uv
 
-def createMesh(me, simple):
+def createMesh(me, simple,twoside):
     newverts=[]
     tris=[]
     me.calc_normals()
@@ -707,13 +933,15 @@ def createMesh(me, simple):
                 newverts.append(EDMVertex(me.vertices[id],mathutils.Vector([0,0]),mathutils.Vector([0,0,0]),mathutils.Vector([0,0,0]),mathutils.Vector([0,0,0])))
             tri.append(ivert)
         return tri
-    def addTri(vertIDs):
+    def addTri(vertIDs,invert):
         tri=[]
         for loop_index in vertIDs:
             id=me.loops[loop_index].vertex_index #ursprünglicher vertex
             tangent=me.loops[loop_index].tangent
             bitangent=me.loops[loop_index].bitangent
             normal=me.loops[loop_index].normal
+            if invert:
+                normal=-normal
             uv=mathutils.Vector([uv_layer[loop_index].uv[0],1.0-uv_layer[loop_index].uv[1]]) #uv
             found=False
             ivert=0
@@ -731,22 +959,30 @@ def createMesh(me, simple):
     for poly in me.polygons:
         loop=range(poly.loop_start, poly.loop_start + poly.loop_total)
         if simple:
-            tri=addTriSimple([loop[0],loop[1],loop[2]])
+            tri=addTriSimple([loop[0],loop[1],loop[2]],False)
+            tris.append(tri)
         else:
-            tri=addTri([loop[0],loop[1],loop[2]])
-        tris.append(tri)
+            tri=addTri([loop[0],loop[1],loop[2]],False)
+            tris.append(tri)
+            if twoside:
+                tri2=addTri([loop[0],loop[2],loop[1]],True)
+                tris.append(tri2)
         if len(loop)==4:
             if simple:
-                tri=addTriSimple([loop[0],loop[2],loop[3]])
+                tri=addTriSimple([loop[0],loop[2],loop[3]],False)
+                tris.append(tri)
             else:
-                tri=addTri([loop[0],loop[2],loop[3]])
-            tris.append(tri)
+                tri=addTri([loop[0],loop[2],loop[3]],False)
+                tris.append(tri)
+                if twoside:
+                    tri2=addTri([loop[0],loop[3],loop[2]],True)
+                    tris.append(tri2)
     if not simple:
         me.free_tangents()
     #print(len(newverts))
     return newverts,tris
 
-def writeMesh(file,verts,tris,normals,tangents,uvs,groups,weights):
+def writeMesh(file,verts,tris,normals,tangents,uvs,groups,weights,damageTangents):
     stride=3
     if groups:
         stride+=1
@@ -758,6 +994,8 @@ def writeMesh(file,verts,tris,normals,tangents,uvs,groups,weights):
         stride+=2
     if weights:
         stride+=4
+    if damageTangents:
+        stride+=6
     writeUInt(file,len(verts))
     writeUInt(file,stride)
     for v in verts:
@@ -786,6 +1024,9 @@ def writeMesh(file,verts,tris,normals,tangents,uvs,groups,weights):
             writeFloat(file,v.weights[1])
             writeFloat(file,v.weights[2])
             writeFloat(file,v.weights[3])
+        if damageTangents:
+            writeVec3f(file,v.tangent)
+            writeVec3f(file,v.bitangent)
     writeUChar(file,2)#Alle Indizes sind UInts (0Chars, 1 Shorts)
     writeUInt(file,3*len(tris))
     writeUInt(file,5)
@@ -806,8 +1047,8 @@ class FakeOmniLightNode:
         self.uv2=obj.FakeLightUV2
         self.scale=obj.FakeLightScale
         self.material=EDMFakeLightMaterial(obj.FakeOmniLightTextureName)
-        self.material.uniforms.append(EDMProperty("shiftToCamera", "model::Property<float>" ,obj.FakeLightShift))
         self.material.uniforms.append(EDMProperty("sizeFactors", "model::Property<osg::Vec3f>" ,mathutils.Vector([3,50000,0])))
+        self.material.uniforms.append(EDMProperty("shiftToCamera", "model::Property<float>" ,obj.FakeLightShift))
         self.N=1
     def write(self,file):
         writeNodeBase(file,self)
@@ -836,12 +1077,14 @@ class RenderNode:
         self.unknown=0
         self.materialID=0
         self.parentData=0
-        self.parentDataDamageArg=-1
-        verts,tris=createMesh(mesh,False)
+        verts,tris=createMesh(mesh,False,obj.EDMTwoSides)
         #bpy.data.meshes.remove(mesh)
         self.verts=verts
         self.tris=tris
         self.sourcematerial=obj.material_slots[0].material
+        self.parentDataDamageArg=-1
+        if self.sourcematerial.EDMUseDamageMap:
+            self.parentDataDamageArg=obj.EDMDamageArgument
         self.material=EDMMaterial(self.sourcematerial,False)
         self.stride=15 #automatisch aus Material ermitteln
         RenderNode.giBytes+=12*len(self.tris)
@@ -853,37 +1096,45 @@ class RenderNode:
         writeUInt(file,1) #NParentdata
         writeUInt(file,self.parentData)
         writeInt(file,self.parentDataDamageArg)
-        exportNormals=True
-        if self.sourcematerial.EDMMaterialType=='transp_self_illu':
-            exportNormals=False
-        writeMesh(file,self.verts,self.tris,exportNormals,self.sourcematerial.EDMUseNormalMap,True,True,False)
+        exportNormals=self.material.VertexFormat[1]!=0
+        exportTangents=self.material.VertexFormat[2]!=0
+        exportDamageTangents=self.material.VertexFormat[24]!=0
+        writeMesh(file,self.verts,self.tris,exportNormals,exportTangents,True,True,False,exportDamageTangents)
         #writeMesh(file,verts,tris,normals,tangents,uvs,groups,weights):
 class SkinNode:
     giBytes=0
     gvBytes=0
     def __init__(self,obj,boneid):
         #print("create SkinNode")
+        selected=obj.select_get()
+        obj.select_set(True)
+        
         mesh=obj.data
         self.name=obj.name
         self.type="model::SkinNode"
         self.PropertySet=[]
         self.unknown=-1
         self.bones=[]
+        effgroup=self.TextureCoordinateChannels=[-1 for i in obj.vertex_groups] 
+        count=-1;
         for g in obj.vertex_groups:
             if g.name in boneid:
+                count=count+1
+                effgroup[g.index]=count
                 self.bones.append(boneid[g.name])
+            
+            
         if len(self.bones)>0:
             self.bones.insert(0,self.bones[0])
         self.sourcematerial=obj.material_slots[0].material
         self.material=EDMMaterial(self.sourcematerial,True)
         self.stride=13
-        verts,tris=createMesh(mesh,False)
+        verts,tris=createMesh(mesh,False,obj.EDMTwoSides)
         self.verts=verts
+        print(obj.name)
         for v in verts:
             for i in range(4):
-                v.groups[i]-=0
-                if v.groups[i]==-1:
-                    v.groups[i]=0
+                v.groups[i]=effgroup[v.groups[i]]
         self.tris=tris
         RenderNode.giBytes+=12*len(self.tris)
         RenderNode.gvBytes+=4*self.stride*len(self.tris)
@@ -896,9 +1147,11 @@ class SkinNode:
             writeUInt(file,b)
         writeInt(file,self.unknown)# use bonemap?
         exportNormals=True
+        exportNormals=self.material.VertexFormat[1]!=0
+        exportTangents=self.material.VertexFormat[2]!=0
         if self.sourcematerial.EDMMaterialType=='transp_self_illu':
             exportNormals=False
-        writeMesh(file,self.verts,self.tris,exportNormals,self.sourcematerial.EDMUseNormalMap,True,True,True)
+        writeMesh(file,self.verts,self.tris,exportNormals,exportTangents,True,True,True,False)
 class ShellNode:
     ciBytes=0
     cvBytes=0
@@ -911,7 +1164,7 @@ class ShellNode:
         self.VertexFormat=[0 for i in range(26)] #chars
         self.VertexFormat[0]=3
         self.stride=3
-        verts,tris=createMesh(mesh,True)
+        verts,tris=createMesh(mesh,True,False)
         self.verts=verts
         self.tris=tris
         ShellNode.ciBytes+=12*len(self.tris)
@@ -923,7 +1176,7 @@ class ShellNode:
         for i in range(26):
             #print(self.VertexFormat[i])
             writeUChar(file,self.VertexFormat[i])
-        writeMesh(file,self.verts,self.tris,False,False,False,False,False)
+        writeMesh(file,self.verts,self.tris,False,False,False,False,False,False)
         #writeMesh(file,verts,tris,normals,tangents,uvs,groups,weights):
 
 class SegmentsNode:
@@ -1091,6 +1344,22 @@ class EDMModel:
         file.close()
         body.close()
 
+
+def checkKeyframes(curves):
+    frames=[]
+    N=len(curves[0].keyframe_points)
+    for i in range(1, len(curves)):
+        if N!=len(curves[i].keyframe_points):
+            writeWarning("Inconsistend Keyframes: {} Action: {}".format(curves[0].data_path, curves[0].id_data.name))
+            return None
+    for i in range(N):
+        x0=curves[0].keyframe_points[i].co[0]
+        for j in range(1, len(curves)):
+            if x0!=curves[j].keyframe_points[i].co[0]:
+                writeWarning("Inconsistend Keyframes: {} Action: {}".format(curves[0].data_path, curves[0].id_data.name))
+                return None
+    return N
+        
 def getOffsetTransform(a,b, shift):
     #Prüfen ob wirklich eine Transformation vorliegt
     #print(a.name)
@@ -1108,39 +1377,6 @@ def getOffsetTransform(a,b, shift):
     dl=dx[0]*dx[0]+dx[1]*dx[1]+dx[2]*dx[2]
     return t
 
-def getAllChildren(obj,list):
-    for x in obj.children:
-        list.append(x)
-        getAllChildren(x,list)
-
-def parseAnimationPath(fcu):
-    path=fcu.data_path
-    l=path.split("[")
-    if len(l)>1:
-        type=l[0]
-        l=l[1].split("]")
-        name=l[0][1:len(l[0])-1]
-        prop=l[1].split(".")[1]
-        return type,name,prop
-    else:
-        if path=="hide_render":
-            return "Visibility", "","Visibility"
-    return None,None,None
-
-def checkKeyframes(curves):
-    frames=[]
-    N=len(curves[0].keyframe_points)
-    for i in range(1, len(curves)):
-        if N!=len(curves[i].keyframe_points):
-            writeWarning("Inconsistend Keyframes: {} Action: {}".format(curves[0].data_path, curves[0].id_data.name))
-            return None
-    for i in range(N):
-        x0=curves[0].keyframe_points[i].co[0]
-        for j in range(1, len(curves)):
-            if x0!=curves[j].keyframe_points[i].co[0]:
-                writeWarning("Inconsistend Keyframes: {} Action: {}".format(curves[0].data_path, curves[0].id_data.name))
-                return None
-    return N
 def resetData():
     stringLookUp.clear()
     EDMAnimationData.RotationData=0
@@ -1213,7 +1449,8 @@ def createEDMModel():
     exportErrorStr=""
     for i in bpy.data.objects:
         if i.type=='ARMATURE':
-            armatures.append(i)
+            if i.data.EDMArmatureExport:
+                armatures.append(i)
     if len(armatures) !=1:
         exportErrorStr = "Use one and only one armature! Not writing"
         print(exportErrorStr)
@@ -1363,7 +1600,23 @@ def createEDMModel():
                 nodeindex+=1
                 boneid[c.name+"visibility"]=nodeindex
                 r.parentData=nodeindex
-
+        if type=='SkinNode':
+            fcu,argument= getVisibilityFCurve(c)
+            if fcu !=None:
+                print("Skinvisivbility")
+                print(r.bones[0])
+                print(edmmodel.nodes[r.bones[0]].name)
+                v=VisibilityNode(edmmodel.nodes[r.bones[0]].parentid)
+                v.name=c.name
+                v.addFCurve(argument,fcu)
+                if argument+1>=actionindex:
+                    actionindex=argument+1
+                #print(actionindex)
+                edmmodel.nodes.append(v)
+                nodeindex+=1
+                boneid[c.name+"visibility"]=nodeindex
+                edmmodel.nodes[r.bones[0]].parentid=nodeindex                
+    printnodes=True
     if printnodes:
         print("")
         print("Nodes: ")
@@ -1390,7 +1643,11 @@ def createEDMModel():
             continue
 
         #print("Action: "+action.name)
-        tMin,tMax=action.frame_range
+        if action.EDMAutoRange:
+            tMin,tMax=action.frame_range
+        else:
+            tMin=action.EDMStartFrame
+            tMax=action.EDMEndFrame
         b=2.0/(tMax-tMin)
         a=-tMin*b-1.0
         #print(tMin)
@@ -1496,6 +1753,7 @@ def createEDMModel():
 
 def prepareObjects():
     for c in bpy.data.objects:
+        print(c.name)
         if c.type=='MESH' and not c.EDMRenderType=='SegmentsNode':
             calc_tan=True
             for p in c.data.polygons:

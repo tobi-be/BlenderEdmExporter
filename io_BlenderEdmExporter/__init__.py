@@ -2,7 +2,8 @@ bl_info = {
     "name": "EDM-Exporter",
     "blender": (2, 82, 0),
     "category": "Import-Export",
-	"author": "Tobias Berkefeld"
+	"author": "Tobias Berkefeld",
+    "version": (1,0,5),
 }
 
 import bpy
@@ -10,6 +11,8 @@ from .edmexporter import*
 from .edmpanels import*
 from .edmprops import*
 from .edmmessagebox import*
+from .edmbakeaction import*
+from .edmutils import*
 from bpy_extras.io_utils import ExportHelper
 
 if "bpy" in locals():
@@ -20,6 +23,12 @@ if "bpy" in locals():
         importlib.reload(edmpanels)
     if "edmprops" in locals():
         importlib.reload(edmprops)
+    if "edmmessagebox" in locals():
+        importlib.reload(edmmessagebox)
+    if "edmbakeaction" in locals():
+       importlib.reload(edmbakeaction)
+    if "edmutils" in locals():
+       importlib.reload(edmutils)
 
 #operators
 class ExportEDMFile(bpy.types.Operator,ExportHelper):
@@ -63,19 +72,22 @@ def menu_function_export(self, context):
 
 
 def register():
-    bpy.utils.register_class(BlenderEDMOptions)
+    bpy.utils.register_class(BlenderEDMOptions)  
     bpy.utils.register_class(ExportEDMFile)
     bpy.types.TOPBAR_MT_file_export.append(menu_function_export)
     bpy.utils.register_class(EDMObjectPanel)
     bpy.utils.register_class(ActionOptionPanel)
     bpy.utils.register_class(EDMMessageBox)
+    bpy.utils.register_class(EDMBakeAction)
 
 def unregister():
+    bpy.utils.unregister_class(EDMBakeAction)
     bpy.utils.unregister_class(ActionOptionPanel)
     bpy.utils.unregister_class(EDMObjectPanel)
     bpy.utils.unregister_class(BlenderEDMOptions)
     bpy.utils.unregister_class(ExportEDMFile)
     bpy.utils.unregister_class(EDMMessageBox)
+    
 
 
 

@@ -21,6 +21,7 @@ class EDMObjectPanel(bpy.types.Panel):
         box = layout.box()
         #print(context.object.type)
         if context.object.type=='ARMATURE':
+            box.prop(bpy.context.object.data, 'EDMArmatureExport')
             box.prop(bpy.context.object.data, 'EDMAutoCalcBoxes')
             if bpy.context.object.data.EDMAutoCalcBoxes==False:
                 box2=layout.box()
@@ -40,6 +41,7 @@ class EDMObjectPanel(bpy.types.Panel):
         
         if context.object.type=='MESH':
             box.prop(bpy.context.object, 'EDMRenderType')
+            box.prop(bpy.context.object,'EDMTwoSides')
             type=bpy.context.object.EDMRenderType
             if type=='RenderNode' or type=='SkinNode':
                 materialBox=layout.box()
@@ -48,37 +50,191 @@ class EDMObjectPanel(bpy.types.Panel):
                     materialBox.label(text="Material: "+material.name)
                     materialBox.prop(material, 'EDMMaterialType')
                     col = materialBox.column(align = True)
-                    col.label(text="Diffuse colormap:")
-                    col.prop(material,'EDMDiffuseMapName')
-                    col.prop(material,'EDMDiffuseValue')
+                    #Solid   ################################################
                     if material.EDMMaterialType=='Solid':
-                        col.prop(material,'EDMUseAlpha')
-
-                    #col.prop(material,'EDMDiffuseShift')
-                    #materialBox.separator()
-                    col = materialBox.column(align = True)
-                    if material.EDMMaterialType=='transp_self_illu':
-                        col.prop(material,'EDMSelfIllumination')
-                        col.prop(material,'EDMSelfIlluminationArgument')
-                    if material.EDMMaterialType=='self_illu':
-                        col.prop(material,'EDMSelfIllumination')
-                    if material.EDMMaterialType=='bano':
-                        col.prop(material,'EDMSelfIllumination')
-                    if material.EDMMaterialType=='Solid':
+                        diffuseBox=layout.box()
+                        normalBox=layout.box()
+                        specularBox=layout.box()
+                        damageBox=layout.box()
+                        illuminationBox=layout.box()
+                        col.prop(material,'EDMBlending')
+                        col.prop(material,'EDMShadows')
+                        col = diffuseBox.column(align = True)
+                        col.label(text="Diffuse colormap:")
+                        col.prop(material,'EDMDiffuseMapName')
+                        col.prop(material,'EDMDiffuseValue')
+                        col.prop(material,'EDMUseDiffuseShift')
+                        if material.EDMUseDiffuseShift:
+                            col.prop(material,'EDMDiffuseShift')
+                            col.prop(material,'EDMDiffuseShiftArgument')
+                        col = normalBox.column(align = True)
                         col.prop(material,'EDMUseNormalMap')
                         if material.EDMUseNormalMap:
                             col.prop(material,'EDMNormalMapName')
                             col.prop(material,'EDMNormalMapValue')
-                    col = materialBox.column(align = True)
-                    col.prop(material,'EDMReflectionValue')
-                    col.prop(material,'EDMReflectionBlurring')
-                    if material.EDMMaterialType=='Solid':
+                        col = specularBox.column(align = True)
                         col.prop(material,'EDMUseSpecularMap')
-                    col.prop(material,'EDMSpecularPower')
-                    col.prop(material,'EDMSpecularFactor')
-                    if material.EDMUseSpecularMap and material.EDMMaterialType=='Solid':
-                        col.prop(material,'EDMSpecularMapName')
-                        col.prop(material,'EDMSpecularMapValue')    
+                        if material.EDMUseSpecularMap:
+                            col.prop(material,'EDMSpecularMapName')
+                            col.prop(material,'EDMSpecularMapValue')
+                        col = specularBox.column(align = True)
+                        col.prop(material,'EDMReflectionValue')
+                        col.prop(material,'EDMReflectionBlurring')
+                        col.prop(material,'EDMSpecularPower')
+                        col.prop(material,'EDMSpecularFactor')
+                        col = damageBox.column(align = True)
+                        col.prop(material,'EDMUseDamageMap')
+                        if material.EDMUseDamageMap:
+                            col.prop(material,'EDMDamageMapName')
+                            col.prop(bpy.context.object,'EDMDamageArgument')
+                            col.prop(material,'EDMUseDamageNormalMap')
+                            if material.EDMUseDamageNormalMap:
+                                col.prop(material,'EDMDamageNormalMapName')
+                        col = illuminationBox.column(align = True)
+                        col.prop(material,'EDMUseSelfIllumination')
+                        if material.EDMUseSelfIllumination:
+                            col.prop(material,'EDMSelfIlluminationMapName')
+                            col.prop(material,'EDMSelfIllumination')
+                            col.prop(material,'EDMSelfIlluminationArgument')
+
+                    #Glass    ###############################################    
+                    if material.EDMMaterialType=='Glass':
+                        diffuseBox=layout.box()
+                        specularBox=layout.box()
+                        damageBox=layout.box()
+                        col = diffuseBox.column(align = True)
+                        col.label(text="Diffuse colormap:")
+                        col.prop(material,'EDMDiffuseMapName')
+                        col.prop(material,'EDMDiffuseValue')
+                        col.prop(material,'EDMUseDiffuseShift')
+                        if material.EDMUseDiffuseShift:
+                            col.prop(material,'EDMDiffuseShift')
+                            col.prop(material,'EDMDiffuseShiftArgument')
+                        col = specularBox.column(align = True)
+                        col.prop(material,'EDMReflectionValue')
+                        col.prop(material,'EDMReflectionBlurring')
+                        col.prop(material,'EDMSpecularPower')
+                        col.prop(material,'EDMSpecularFactor')
+                        col = damageBox.column(align = True)
+                        col.prop(material,'EDMUseDamageMap')
+                        if material.EDMUseDamageMap:
+                            col.prop(material,'EDMDamageMapName')
+                            col.prop(bpy.context.object,'EDMDamageArgument')
+                            #col.prop(material,'EDMUseDamageNormalMap')
+                            #if material.EDMUseDamageNormalMap:
+                            #    col.prop(material,'EDMDamageNormalMapName')
+                    #transparent self-illuminated  ###############################
+                    if material.EDMMaterialType=='transp_self_illu':
+                        diffuseBox=layout.box()
+                        illuminationBox=layout.box()
+                        col.prop(material,'EDMSumBlend')
+                        col = diffuseBox.column(align = True)
+                        col.label(text="Diffuse colormap:")
+                        col.prop(material,'EDMDiffuseMapName')
+                        col.prop(material,'EDMDiffuseValue')
+                        col.prop(material,'EDMDiffuseShift')
+                        col.prop(material,'EDMDiffuseShiftArgument')
+                        col = illuminationBox.column(align = True)
+                        col.prop(material,'EDMSelfIllumination')
+                        col.prop(material,'EDMSelfIlluminationArgument')
+
+                    # self-illuminated#########################################            
+                    if material.EDMMaterialType=='self_illu':
+                        diffuseBox=layout.box()
+                        normalBox=layout.box()
+                        specularBox=layout.box()
+                        illuminationBox=layout.box()
+                        col = diffuseBox.column(align = True)
+                        col.label(text="Diffuse colormap:")
+                        col.prop(material,'EDMDiffuseMapName')
+                        col.prop(material,'EDMDiffuseValue')
+                        col.prop(material,'EDMUseDiffuseShift')
+                        if material.EDMUseDiffuseShift:
+                            col.prop(material,'EDMDiffuseShift')
+                            col.prop(material,'EDMDiffuseShiftArgument')
+                        col = normalBox.column(align = True)
+                        col.prop(material,'EDMUseNormalMap')
+                        if material.EDMUseNormalMap:
+                            col.prop(material,'EDMNormalMapName')
+                            col.prop(material,'EDMNormalMapValue')
+                        col = specularBox.column(align = True)
+                        col.prop(material,'EDMUseSpecularMap')
+                        if material.EDMUseSpecularMap:
+                            col.prop(material,'EDMSpecularMapName')
+                            col.prop(material,'EDMSpecularMapValue')   
+                        col.prop(material,'EDMReflectionValue')
+                        col.prop(material,'EDMReflectionBlurring')
+                        col.prop(material,'EDMSpecularPower')
+                        col.prop(material,'EDMSpecularFactor')
+                        col = illuminationBox.column(align = True)
+                        col.prop(material,'EDMSelfIllumination')
+                        col.prop(material,'EDMSelfIlluminationArgument')
+                        col.prop(material,'EDMIlluminationColor')
+                        col = illuminationBox.column(align = True)
+                        col.prop(material,'EDMmultiplyDiffuse')
+                        col.prop(material,'EDMPhosphor')
+
+                    if material.EDMMaterialType=='additive_self_illu':
+                        diffuseBox=layout.box()
+                        normalBox=layout.box()
+                        specularBox=layout.box()
+                        illuminationBox=layout.box()
+                        col = diffuseBox.column(align = True)
+                        col.label(text="Diffuse colormap:")
+                        col.prop(material,'EDMDiffuseMapName')
+                        col.prop(material,'EDMDiffuseValue')
+                        col.prop(material,'EDMUseDiffuseShift')
+                        if material.EDMUseDiffuseShift:
+                            col.prop(material,'EDMDiffuseShift')
+                            col.prop(material,'EDMDiffuseShiftArgument')
+                        col = normalBox.column(align = True)
+                        col.prop(material,'EDMUseNormalMap')
+                        if material.EDMUseNormalMap:
+                            col.prop(material,'EDMNormalMapName')
+                            col.prop(material,'EDMNormalMapValue')
+                        col = specularBox.column(align = True)
+                        col.prop(material,'EDMUseSpecularMap')
+                        if material.EDMUseSpecularMap:
+                            col.prop(material,'EDMSpecularMapName')
+                            col.prop(material,'EDMSpecularMapValue')
+                        col.prop(material,'EDMReflectionValue')
+                        col.prop(material,'EDMSpecularPower')
+                        col.prop(material,'EDMSpecularFactor')
+                        col = illuminationBox.column(align = True)
+                        col.prop(material,'EDMSelfIllumination')
+                        col.prop(material,'EDMSelfIlluminationArgument')
+                        col.prop(material,'EDMIlluminationColor')
+                        col.prop(material,'EDMmultiplyDiffuse')
+                        col.prop(material,'EDMPhosphor')
+                    if material.EDMMaterialType=='bano':
+                        col.label(text="Diffuse colormap:")
+                        col.prop(material,'EDMDiffuseMapName')
+                        col.prop(material,'EDMDiffuseValue')
+                        col.prop(material,'EDMBanoDistCoefs')
+                        col.prop(material,'EDMDiffuseShift')
+                        #col = materialBox.column(align = True)
+                    if material.EDMMaterialType=='forest':
+                        col.label(text="Diffuse colormap:")
+                        col.prop(material,'EDMDiffuseMapName')
+                        #col = materialBox.column(align = True)
+                    if material.EDMMaterialType=='Mirror':
+                        col.label(text="Diffuse colormap:")
+                        col.prop(material,'EDMDiffuseMapName')
+                        col.prop(material,'EDMDiffuseValue')
+                        col.prop(material,'EDMUseNormalMap')
+                        if material.EDMUseNormalMap:
+                            col.prop(material,'EDMNormalMapName')
+                            col.prop(material,'EDMNormalMapValue')
+                        col.prop(material,'EDMUseSpecularMap')
+                        if material.EDMUseSpecularMap:
+                            col.prop(material,'EDMSpecularMapName')
+                            col.prop(material,'EDMSpecularMapValue')   
+                        col.prop(material,'EDMReflectionValue')
+                        col.prop(material,'EDMReflectionBlurring')
+                        col.prop(material,'EDMSpecularPower')  
+                        col.prop(material,'EDMSpecularFactor')    
+                    
+                     
                 else:
                     materialBox.label(text=context.object.name +" has no material")
         if context.object.type=='EMPTY':
@@ -127,9 +283,23 @@ class ActionOptionPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         box = layout.box()
+        
         if context.object.animation_data.action is not None:
-            box.label(text=context.object.animation_data.action.name)
-            box.prop(context.object.animation_data.action, 'exportToEDM')
-            box.prop(context.object.animation_data.action, 'animationArgument')
+            col = box.column(align = True)
+            col.label(text=context.object.animation_data.action.name)
+            col.prop(context.object.animation_data.action, 'exportToEDM')
+            col.prop(context.object.animation_data.action, 'animationArgument')
+            col = box.column(align = True)
+            col.prop(context.object.animation_data.action, 'EDMAutoRange')
+            if not context.object.animation_data.action.EDMAutoRange:
+                row = col.row(align=True)
+                row.prop(context.object.animation_data.action, 'EDMStartFrame')
+                row.prop(context.object.animation_data.action, 'EDMEndFrame')
+            col = box.column(align = True)
+            col.label(text="Bake Action")
+            row = col.row(align=True)
+            row.prop(context.object.animation_data.action, 'EDMBakeStartFrame')
+            row.prop(context.object.animation_data.action, 'EDMBakeEndFrame')
+            col.operator("action.edmbakeaction")
 
 

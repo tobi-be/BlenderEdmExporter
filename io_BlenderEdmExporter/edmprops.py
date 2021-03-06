@@ -23,6 +23,9 @@ class BlenderEDMOptions(bpy.types.PropertyGroup):
         name="Max",
         default=(10.0,10.0,10.0),
         size=3)
+    bpy.types.Armature.EDMArmatureExport=bpy.props.BoolProperty(
+        name="Export Armature",
+        default=True)
     bpy.types.Object.EDMRenderType= bpy.props.EnumProperty(
         items = [('RenderNode', 'RenderNode', 'none deformed mesh'), 
                 ('SkinNode', 'SkinNode', 'Bone-defomed mesh'),
@@ -31,6 +34,9 @@ class BlenderEDMOptions(bpy.types.PropertyGroup):
                 ('None', 'None','Nothing')],
         name = "RenderType",
         default='None')
+    bpy.types.Object.EDMTwoSides=bpy.props.BoolProperty(
+        name="Two sides",
+        default=False)
     bpy.types.Object.EDMEmptyType= bpy.props.EnumProperty(
         items = [('Connector', 'Connector', 'Connector'),
                 ('FakeOmniLight','FakeOmniLight','FakeOmniLight'),
@@ -43,9 +49,26 @@ class BlenderEDMOptions(bpy.types.PropertyGroup):
                 ('Solid', 'Solid', 'Solid'),
                 ('transp_self_illu','transparent self-illuminated',  'transparent self-illuminated'),
                 ('self_illu', 'self-illuminated', 'self-illuminated'),
-                ('bano', 'bano_material', 'bano_material')],
+                ('additive_self_illu', 'additive_self-illuminated', 'additive_self-illuminated'),
+                ('bano', 'bano_material', 'bano_material'),
+                ('forest','forest','forest'),
+                ('Mirror','Mirror','Mirror')],
         name = "MaterialType",
         default='Solid')
+    bpy.types.Material.EDMBlending= bpy.props.EnumProperty(
+        items = [('0', '0', '0'), 
+                ('1', '1', '1'),
+                ('2', '2', '2'),
+                ('3', '3', '3')],
+        name = "Blending",
+        default='0')
+    bpy.types.Material.EDMShadows= bpy.props.EnumProperty(
+        items = [('0', '0', '0'), 
+                ('1', '1', '1'),
+                ('2', '2', '2'),
+                ('3', '3', '3')],
+        name = "Shadows",
+        default='1')
     bpy.types.Object.FakeOmniLightTextureName=bpy.props.StringProperty(
         name="filename",
         default="texture_light")
@@ -98,27 +121,68 @@ class BlenderEDMOptions(bpy.types.PropertyGroup):
         default=(0.0,0.0),
         min=0.0,
         size=2)
+    bpy.types.Material.EDMBanoDistCoefs=bpy.props.FloatVectorProperty(
+        name="Bano Distance Coefs",
+        default=(60.0,1000.0,100.0),
+        min=0,
+        size=3)
     bpy.types.Material.EDMUseDiffuseMap=bpy.props.BoolProperty(
         name="Use diffuse map",
         default = True)
+    bpy.types.Material.EDMUseDamageMap=bpy.props.BoolProperty(
+        name="Use Damage map",
+        default = False)
+    bpy.types.Material.EDMUseDamageNormalMap=bpy.props.BoolProperty(
+        name="Use Damage Normal map",
+        default = False)
+    bpy.types.Material.EDMSumBlend=bpy.props.BoolProperty(
+        name="Sum Blending",
+        default = True)
     bpy.types.Material.EDMUseAlpha=bpy.props.BoolProperty(
         name="Use alpha channel",
-        default = False)		
+        default = False)
     bpy.types.Material.EDMDiffuseMapName=bpy.props.StringProperty(
         name="filename",
         default="texture")
+    bpy.types.Material.EDMDamageMapName=bpy.props.StringProperty(
+        name="filename",
+        default="damage")
+    bpy.types.Material.EDMDamageNormalMapName=bpy.props.StringProperty(
+        name="filename",
+        default="damage_normal")
     bpy.types.Material.EDMDiffuseValue=bpy.props.FloatProperty(
         name="Diffuse value",
         default=1.0,
         min=0.0,
         max=10.0)
-    bpy.types.Material.EDMDiffuseShift=bpy.props.FloatProperty(
-        name="Diffuse shift",
-        default=0.0,
+    bpy.types.Material.EDMPhosphor=bpy.props.FloatProperty(
+        name="Phosphor value",
+        default=1.0,
         min=0.0,
-        max=1.0)    
+        max=10.0)
+    bpy.types.Material.EDMDiffuseShift=bpy.props.FloatVectorProperty(
+        name="Diffuse shift",
+        default=(0.0,0.0),
+        min=0.0,
+        max=1.0,
+        size=2)
+    bpy.types.Material.EDMDiffuseShiftArgument=bpy.props.IntProperty(
+        name="Animation Argument",
+        default=0,
+        min=0)
+    bpy.types.Material.EDMIlluminationColor=bpy.props.FloatVectorProperty(
+        name="Illumination Color",
+        default=(1.0,1.0,1.0),
+        min=0.0,
+        max=1.0,
+        size=3)          
     bpy.types.Material.EDMReflectionValue=bpy.props.FloatProperty(
         name="Reflection value",
+        default=0.0,
+        min=0.0,
+        max=1.0)
+    bpy.types.Material.EDMmultiplyDiffuse=bpy.props.FloatProperty(
+        name="multiply Diffuse",
         default=0.0,
         min=0.0,
         max=1.0)
@@ -127,10 +191,20 @@ class BlenderEDMOptions(bpy.types.PropertyGroup):
         default=0.2,
         min=0.0,
         max=1.0)
+    bpy.types.Material.EDMUseDiffuseShift=bpy.props.BoolProperty(
+        name="Use Diffuse Shift",
+        default = False)
+    bpy.types.Material.EDMUseSelfIllumination=bpy.props.BoolProperty(
+        name="Use Selfillumination",
+        default = False)
     bpy.types.Material.EDMSelfIlluminationArgument=bpy.props.IntProperty(
         name="Animation Argument",
         default=0,
-        min=0)       
+        min=0)
+    bpy.types.Object.EDMDamageArgument=bpy.props.IntProperty(
+        name="Animation Argument",
+        default=0,
+        min=0)
     bpy.types.Material.EDMSelfIllumination=bpy.props.FloatProperty(
         name="Self Illumination Value",
         default=1,
@@ -142,14 +216,17 @@ class BlenderEDMOptions(bpy.types.PropertyGroup):
     bpy.types.Material.EDMNormalMapName=bpy.props.StringProperty(
         name="filename",
         default="texture_normal")
+    bpy.types.Material.EDMSelfIlluminationMapName=bpy.props.StringProperty(
+        name="filename",
+        default="texture_illumination")
     bpy.types.Material.EDMNormalMapValue=bpy.props.FloatProperty(
         name="Normal map value",
         default=0.0,
         min=0.0,
         max=1.0)    
     bpy.types.Material.EDMUseSpecularMap=bpy.props.BoolProperty(
-        name="Use specular map",
-        default = False)        
+        name="Use specular map/Roughtmet",
+        default = False)
     bpy.types.Material.EDMSpecularMapValue=bpy.props.FloatProperty(
         name="Specular map value",
         default=0.0,
@@ -172,6 +249,21 @@ class BlenderEDMOptions(bpy.types.PropertyGroup):
     bpy.types.Action.exportToEDM= bpy.props.BoolProperty(
         name="Export Action to EDM",
         default = False)
+    bpy.types.Action.EDMAutoRange= bpy.props.BoolProperty(
+        name="Autorange",
+        default = True)
+    bpy.types.Action.EDMStartFrame= bpy.props.IntProperty(
+        name="Start",
+        default=0)
+    bpy.types.Action.EDMEndFrame= bpy.props.IntProperty(
+        name="End",
+        default=200)
+    bpy.types.Action.EDMBakeStartFrame= bpy.props.IntProperty(
+        name="Start",
+        default=100)
+    bpy.types.Action.EDMBakeEndFrame= bpy.props.IntProperty(
+        name="End",
+        default=200)
     bpy.types.Action.animationArgument= bpy.props.IntProperty(
         name="Animation Argument",
         default=0,
