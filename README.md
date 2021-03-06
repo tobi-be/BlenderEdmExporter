@@ -34,18 +34,18 @@ What should work:
 - Collision lines
 - Argument based animations of Visibility, Rotation, Location, Scale and Bone deformation
 - A selection of material types including diffuse, normal and specular maps. roughmet textures can be added later
-- FakeOmniLights
+- Damage texture layer
 - Lights  
 - Connectors
+- Animation of materialparameters like diffuse shift, selfillumination
+- Baking Animations EDM Export-ready
 
 What doesn‘t work:
 ------------------
 
 - Import EDM models
 - LOD Nodes
-- Visibility Nodes on Skin Nodes
 - Export of modifiers
-- Export of IK chains. Bones which are animated within an IK Chain has to be keyframed additionally by visual rotation or visual location
 
 Known issues
 ------------
@@ -113,7 +113,7 @@ Materials
 As a first approach, the EDM panel offers material properties that are present in the existing EDM files. The settings are independent of the Blender materials and have no influence on the appearance in Blender. Also, the Blender internal material properties have no influence on the exported EDM model. First you have to select a general material type. The type names should be almost self-explanatory. The most commonly used material type should be Solid (def_material in  EDM files). I have not spent much time with the different types and their appearance. Therefore I would not write much here, just a short description of the application and wish every user a lot of fun while experimenting.
 Each material has a diffuse color map. The name of the texture to be used must be entered in the filename field. In general, textures are always entered without file names. If you want to use "texture.png" there must be "texture" there. Using Normalmaps and specular maps is optional. If you want to use _roughmet textures you have to enable a specular map. (See: https://forums.eagle.ru/showthread.php?t=193596 )
 
-There is a new experimental WIP feature of the transparent-self-illuminated material. You can add animated illumination values. You have to choose the animation argument in the EDM Panel. There you can keyframe the illumination value by pressing I when the mouse is over the field of the value. The curves of the added keyframes won't appear at the action editor but when you choose dopesheet in the dropdownmenu of the dopesheet-viewer. You also don't have to create an action for that like you have to when you want to animate bones.
+There is a new experimental feature of the self-illuminated and diffuseshift animation. You can add animated illumination and diffuseshift values. You have to choose the animation argument in the EDM Panel. There you can keyframe the illumination or diffuseshift value by pressing I when the mouse is over the field of the value. The curves of the added keyframes won't appear at the action editor but when you choose dopesheet in the dropdownmenu of the dopesheet-viewer. You also don't have to create an action for that like you have to when you want to animate bones.
 
 RenderNode
 ----------
@@ -149,10 +149,6 @@ Connectors
 
 To place a connector in the EDM model you have to place an empty-object in Blender. The name of the connector will be the name of the empty Object. In the EDM-Panel in Object Properties you have to choose Connector at EmptyType.
 
-FakeOmniLight
--------------
-
-To place a FakeOmniLight in the edm model, you have to place an empty-object in Blender and choose FakeOmniLight in the EDM-Panel. Position offset is an offset relative to the position of the empty. Scale is the size of the fake light, UV1 and UV2 are the uv-coords (left bottom and right top) in the texture defined by filename. Shift to cam moves the fake light on an axis pointing from the position of the fake light and the viewer. 
 
 Light
 -----
@@ -170,3 +166,7 @@ VisibilityNode
 --------------
 
 A VisibilityNode is the way to let an object appear oder disappear with an argument. This is the only thing which has to be animated on an object directly. Select the Object which should get a VisibilityNode in Object Mode.  Open dopesheet editor and switch to Action Editor. Create a new Action. Setup Export to EDM and argument. In Object Properties at Visibility there is a property named „Show in Renders“.  Move mouse over it, change the value as you need and press „I“ to insert a keyframe. Change frame and the value and repeat. To export the VisibilityNode the action has to kept in the animaton data of the object. The animation data of the object is independent of the animation data of the armature. 
+
+Baking Animations
+-----------------
+Actions can be baked by pressing the Bake Action Button at the EDM Action Panel. You can adjust the frame range. Using IK-Chains and other bone contraints becomes very handy with that.
