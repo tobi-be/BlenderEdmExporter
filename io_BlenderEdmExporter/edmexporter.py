@@ -959,7 +959,7 @@ def createMesh(me, simple,twoside):
     for poly in me.polygons:
         loop=range(poly.loop_start, poly.loop_start + poly.loop_total)
         if simple:
-            tri=addTriSimple([loop[0],loop[1],loop[2]],False)
+            tri=addTriSimple([loop[0],loop[1],loop[2]])
             tris.append(tri)
         else:
             tri=addTri([loop[0],loop[1],loop[2]],False)
@@ -969,7 +969,7 @@ def createMesh(me, simple,twoside):
                 tris.append(tri2)
         if len(loop)==4:
             if simple:
-                tri=addTriSimple([loop[0],loop[2],loop[3]],False)
+                tri=addTriSimple([loop[0],loop[2],loop[3]])
                 tris.append(tri)
             else:
                 tri=addTri([loop[0],loop[2],loop[3]],False)
