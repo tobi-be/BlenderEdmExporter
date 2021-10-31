@@ -100,6 +100,7 @@ class EDMObjectPanel(bpy.types.Panel):
                     #Glass    ###############################################    
                     if material.EDMMaterialType=='Glass':
                         diffuseBox=layout.box()
+                        normalBox=layout.box()
                         specularBox=layout.box()
                         damageBox=layout.box()
                         col = diffuseBox.column(align = True)
@@ -110,6 +111,11 @@ class EDMObjectPanel(bpy.types.Panel):
                         if material.EDMUseDiffuseShift:
                             col.prop(material,'EDMDiffuseShift')
                             col.prop(material,'EDMDiffuseShiftArgument')
+                        col = normalBox.column(align = True)
+                        col.prop(material,'EDMUseNormalMap')
+                        if material.EDMUseNormalMap:
+                            col.prop(material,'EDMNormalMapName')
+                            col.prop(material,'EDMNormalMapValue')    
                         col = specularBox.column(align = True)
                         col.prop(material,'EDMReflectionValue')
                         col.prop(material,'EDMReflectionBlurring')

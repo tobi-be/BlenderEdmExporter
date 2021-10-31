@@ -350,6 +350,12 @@ class EDMMaterial:
             self.VertexFormat[1]=3 #normals
             self.VertexFormat[2]=0
             self.VertexFormat[3]=0
+            if material.EDMUseNormalMap:
+                self.VertexFormat[2]=3
+                self.VertexFormat[3]=3
+                self.textures.append(EDMTexture(1,material.EDMNormalMapName))
+                self.uniforms.append(EDMProperty("normalMapValue", "model::Property<float>" ,material.EDMNormalMapValue))
+                self.TextureCoordinateChannels[1]=0
             if material.EDMUseDamageMap:
                 self.TextureCoordinateChannels[5]=0
                 self.textures.append(EDMTexture(5,material.EDMDamageMapName))
