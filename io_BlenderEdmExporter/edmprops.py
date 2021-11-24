@@ -87,6 +87,10 @@ class BlenderEDMOptions(bpy.types.PropertyGroup):
         name="Brightness",
         default=(1.0),
         min=0.0)
+    bpy.types.Object.EDMBrightnessArgument=bpy.props.IntProperty(
+        name="Animation Argument",
+        default=0,
+        min=0)
     bpy.types.Object.EDMLightDistance=bpy.props.FloatProperty(
         name="Distance",
         default=(10.0),

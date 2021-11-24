@@ -698,11 +698,40 @@ class EDMLight:
         self.parentData=0
         self.Color=obj.EDMLightColor
         self.Brightness=obj.EDMLightBrightness
+        self.animatedBrightnessData=None
         self.Distance=obj.EDMLightDistance
         self.isSpot=0
         self.PropertySet.append(EDMProperty("__VERSION__","model::Property<unsigned int>",1))
         self.LightPropertySet.append(EDMProperty("Color","model::Property<osg::Vec3f>",self.Color))
-        self.LightPropertySet.append(EDMProperty("Brightness","model::Property<float>",self.Brightness))
+        if obj.animation_data!=None:
+            action=obj.animation_data.action
+            if action!=None:
+                for fcu in action.fcurves:
+                    #print(fcu.data_path)
+                    if fcu.data_path=="EDMLightBrightness":
+                        ok=True
+                        print("Brightnessanimation gefunde")
+                        if action.EDMAutoRange:
+                            tMin,tMax=action.frame_range
+                        else:
+                            tMin=action.EDMStartFrame
+                            tMax=action.EDMEndFrame
+                        if tMin!=tMax:
+                            b=2.0/(tMax-tMin)
+                        else:
+                            b=1
+                        a=-tMin*b-1.0 
+                        data=[]
+                        for points in fcu.keyframe_points:
+                            frame=a+b*points.co[0] #range anpassen
+                            data.append(EDMAnimationData(frame,points.co[1]))
+                        if obj.EDMBrightnessArgument+1>EDMMaterial.MaterialActionIndex:
+                            EDMMaterial.MaterialActionIndex=obj.EDMBrightnessArgument+1
+                        self.animatedBrightnessData=EDMAnimatedProperty("Brightness","model::AnimatedProperty<float>",EDMAnimationSet(obj.EDMBrightnessArgument,data,[]))
+        if self.animatedBrightnessData==None:
+            self.LightPropertySet.append(EDMProperty("Brightness","model::Property<float>",self.Brightness))
+        else:
+            self.LightPropertySet.append(self.animatedBrightnessData);
         if obj.EDMisSpot:
             self.isSpot=1
             self.LightPropertySet.append(EDMProperty("Phi","model::Property<float>",obj.EDMLightPhi))
