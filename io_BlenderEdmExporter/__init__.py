@@ -3,7 +3,7 @@ bl_info = {
     "blender": (2, 82, 0),
     "category": "Import-Export",
 	"author": "Tobias Berkefeld",
-    "version": (1,0,6),
+    "version": (1,0,7),
 }
 
 import bpy
