@@ -1789,7 +1789,7 @@ def createEDMModel():
 def prepareObjects():
     for c in bpy.data.objects:
         print(c.name)
-        if c.type=='MESH' and not c.EDMRenderType=='SegmentsNode':
+        if c.type=='MESH' and not c.EDMRenderType=='SegmentsNode' and not c.EDMRenderType=='None':
             calc_tan=True
             for p in c.data.polygons:
                 if  len(p.vertices) != 4 and len(p.vertices) != 3:
