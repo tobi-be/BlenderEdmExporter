@@ -155,6 +155,8 @@ Light
 
 To place a light in the edm model, you have to place an empty-object and choose Light as Emptytype. The color of the emitted light is specified in RGB. You can also adjust brightness and distance. If you enable spotlight you can adjust the opening angle of the spot with theta. 
 
+The brightness of the light can be animated. You have to choose the animation argument in the EDM Panel. There you can keyframe the brightness value by pressing I when the mouse is over the field of the value. The curves of the added keyframes won't appear at the action editor but when you choose dopesheet in the dropdownmenu of the dopesheet-viewer. You also don't have to create an action for that like you have to when you want to animate bones.
+
 Animation
 ---------
 
