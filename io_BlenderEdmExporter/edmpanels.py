@@ -1,5 +1,76 @@
 import bpy
 
+
+
+class EDMVIS_UL_items(bpy.types.UIList):
+    
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        obj = item.obj
+        split = layout.split(factor=0.3)
+        split.label(text="Arg: %d" % (obj.animationArgument))
+        split.prop(obj, "name", text="", emboss=False, translate=False)
+            
+    def invoke(self, context, event):
+        pass   
+
+class ACTION_OT_actions(bpy.types.Operator):
+    """Move items up and down, add and remove"""
+    bl_idname = "visanimation.list_action"
+    bl_label = "List Actions"
+    bl_description = "Move items up and down, add and remove"
+    bl_options = {'REGISTER'}
+    
+    action: bpy.props.EnumProperty(
+        items=(
+            ('UP', "Up", ""),
+            ('DOWN', "Down", ""),
+            ('REMOVE', "Remove", ""),
+            ('ADD', "Add", "")))
+
+    def invoke(self, context, event):
+        obj = context.object
+        idx = obj.visanimation_index
+
+        try:
+            item = obj.visanimation[idx]
+        except IndexError:
+            pass
+        else:
+            if self.action == 'DOWN' and idx < len(obj.visanimation) - 1:
+                item_next = obj.visanimation[idx+1].name
+                obj.visanimation.move(idx, idx+1)
+                obj.visanimation_index += 1
+                info = 'Item "%s" moved to position %d' % (item.name, obj.visanimation_index + 1)
+                self.report({'INFO'}, info)
+
+            elif self.action == 'UP' and idx >= 1:
+                item_prev = obj.visanimation[idx-1].name
+                obj.visanimation.move(idx, idx-1)
+                obj.visanimation_index -= 1
+                info = 'Item "%s" moved to position %d' % (item.name, obj.visanimation_index + 1)
+                self.report({'INFO'}, info)
+
+            elif self.action == 'REMOVE':
+                info = 'Item "%s" removed from list' % (obj.visanimation[idx].name)
+                obj.visanimation_index -= 1
+                obj.visanimation.remove(idx)
+                self.report({'INFO'}, info)
+                
+        if self.action == 'ADD':
+            if context.object:
+                anim_data=obj.animation_data
+                if anim_data is not None:
+                    act=anim_data.action
+                    if act:
+                        item = obj.visanimation.add()
+                        item.name = act.name
+                        item.obj = act
+                        self.report({'INFO'}, 'Added: "%s"' % (item.name))
+                    else:
+                        self.report({'INFO'}, "Nothing selected in the Viewport")
+        return {"FINISHED"}
+    
+
 class EDMObjectPanel(bpy.types.Panel):
     bl_idname = "OBJECT_PT_select"
     bl_label = "EDM"
@@ -17,6 +88,7 @@ class EDMObjectPanel(bpy.types.Panel):
         #layout.label(text="My Select")
     
     def draw(self, context):
+        showVisibility=False
         layout = self.layout
         box = layout.box()
         #print(context.object.type)
@@ -44,6 +116,7 @@ class EDMObjectPanel(bpy.types.Panel):
             box.prop(bpy.context.object,'EDMTwoSides')
             type=bpy.context.object.EDMRenderType
             if type=='RenderNode' or type=='SkinNode':
+                showVisibility=True
                 materialBox=layout.box()
                 if len(context.object.material_slots)>0:
                     material=context.object.material_slots[0].material
@@ -246,6 +319,7 @@ class EDMObjectPanel(bpy.types.Panel):
         if context.object.type=='EMPTY':
             box.prop(bpy.context.object, 'EDMEmptyType')
             if bpy.context.object.EDMEmptyType=='FakeOmniLight':
+                showVisibility=True
                 box.prop(bpy.context.object,'FakeLightP1')
                 box.prop(bpy.context.object,'FakeLightScale')
                 box.label(text="FakeOmniLightTexture:")
@@ -254,6 +328,7 @@ class EDMObjectPanel(bpy.types.Panel):
                 box.prop(bpy.context.object,'FakeLightUV2')
                 box.prop(bpy.context.object,'FakeLightShift')
             if bpy.context.object.EDMEmptyType=='Light':
+                showVisibility=True
                 box.prop(bpy.context.object,'EDMLightColor')
                 box.prop(bpy.context.object,'EDMLightBrightness')
                 box.prop(bpy.context.object,'EDMBrightnessArgument')
@@ -262,8 +337,21 @@ class EDMObjectPanel(bpy.types.Panel):
                 if bpy.context.object.EDMisSpot:
                     box.prop(bpy.context.object,'EDMLightPhi')
                     box.prop(bpy.context.object,'EDMLightTheta')    
-                
-                
+        if showVisibility:
+            VisActionsBox=layout.box()
+            VisActionsBox.label(text="Visibility actions:")
+            obj = bpy.context.object
+            rows = 2
+            row = VisActionsBox.row()
+            row.template_list("EDMVIS_UL_items", "", obj, "visanimation", obj, "visanimation_index", rows=rows)
+            
+            col = row.column(align=True)
+            col.operator("visanimation.list_action", icon='ADD', text="").action = 'ADD'
+            col.operator("visanimation.list_action", icon='REMOVE', text="").action = 'REMOVE'
+            col.separator()
+            col.operator("visanimation.list_action", icon='TRIA_UP', text="").action = 'UP'
+            col.operator("visanimation.list_action", icon='TRIA_DOWN', text="").action = 'DOWN'
+            
             
 class ActionOptionPanel(bpy.types.Panel):
     bl_idname = "ACTION_PT_Option"

@@ -1439,19 +1439,22 @@ def resetData():
     ShellNode.cvBytes=0
 
 
-def getVisibilityFCurve(obj):
-    if obj.animation_data==None:
-        return None,None
-    action=obj.animation_data.action
-    if action==None:
-        return None,None
-    if not action.exportToEDM:
-        return None,None
-    for fcu in action.fcurves:
-        type,name,prop=parseAnimationPath(fcu)
-        if type=="Visibility":
-            return fcu,action.animationArgument
-    return None,None
+def getVisibilityFCurves(obj):
+    fcus=[]
+    arguments=[]
+    for item in obj.visanimation:
+        action=item.obj
+        if action==None:
+            return None,None
+        if not action.exportToEDM:
+            return None,None
+        for fcu in action.fcurves:
+            type,name,prop=parseAnimationPath(fcu)
+            if type=="Visibility":
+                fcus.append(fcu)
+                arguments.append(action.animationArgument)
+    
+    return fcus,arguments
 
 
 def hasMaterial(obj):
@@ -1624,28 +1627,29 @@ def createEDMModel():
                 edmmodel.SkinNodes.append(r)
                 edmmodel.rootNode.updateBoundingBox(c)   
         if type!='Connector'and type!='SkinNode':
-            fcu,argument= getVisibilityFCurve(c)
-            if fcu !=None:
+            fcus,arguments= getVisibilityFCurves(c)
+            if fcus:
                 v=VisibilityNode(r.parentData)
-                v.addFCurve(argument,fcu)
-                if argument+1>=actionindex:
-                    actionindex=argument+1
-                #print(actionindex)
+                for i_fcu in range(len(fcus)):
+                    v.addFCurve(arguments[i_fcu],fcus[i_fcu])
+                    if arguments[i_fcu]+1>=actionindex:
+                        actionindex=arguments[i_fcu]+1
                 edmmodel.nodes.append(v)
                 nodeindex+=1
                 boneid[c.name+"visibility"]=nodeindex
                 r.parentData=nodeindex
         if type=='SkinNode':
-            fcu,argument= getVisibilityFCurve(c)
+            fcus,arguments= getVisibilityFCurves(c)
             if fcu !=None:
                 print("Skinvisivbility")
                 print(r.bones[0])
                 print(edmmodel.nodes[r.bones[0]].name)
                 v=VisibilityNode(edmmodel.nodes[r.bones[0]].parentid)
                 v.name=c.name
-                v.addFCurve(argument,fcu)
-                if argument+1>=actionindex:
-                    actionindex=argument+1
+                for i_fcu in range(ln(fcus)):
+                    v.addFCurve(arguments[i_fcu],fcus[i_fcu])
+                    if arguments[i_fcu]+1>=actionindex:
+                        actionindex=arguments[i_fcu]+1
                 #print(actionindex)
                 edmmodel.nodes.append(v)
                 nodeindex+=1

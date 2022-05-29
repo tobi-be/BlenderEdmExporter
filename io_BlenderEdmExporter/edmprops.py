@@ -1,6 +1,9 @@
 import bpy
 
-
+class ACTION_PG_objectCollection(bpy.types.PropertyGroup):
+    #name: StringProperty() -> Instantiated by default
+    obj: bpy.props.PointerProperty(name="Action", type=bpy.types.Action)
+           
 class BlenderEDMOptions(bpy.types.PropertyGroup):
     bpy.types.Armature.EDMAutoCalcBoxes=bpy.props.BoolProperty(
         name="Use Calculated Bounding Boxes",
@@ -273,5 +276,5 @@ class BlenderEDMOptions(bpy.types.PropertyGroup):
         default=0,
         min=0)
 
-
+   
 
