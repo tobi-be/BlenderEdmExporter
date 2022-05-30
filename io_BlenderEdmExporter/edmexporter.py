@@ -1646,7 +1646,7 @@ def createEDMModel():
                 print(edmmodel.nodes[r.bones[0]].name)
                 v=VisibilityNode(edmmodel.nodes[r.bones[0]].parentid)
                 v.name=c.name
-                for i_fcu in range(ln(fcus)):
+                for i_fcu in range(len(fcus)):
                     v.addFCurve(arguments[i_fcu],fcus[i_fcu])
                     if arguments[i_fcu]+1>=actionindex:
                         actionindex=arguments[i_fcu]+1
