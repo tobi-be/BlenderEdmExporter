@@ -71,7 +71,16 @@ def menu_function_export(self, context):
         text="Export EDM (.edm)")
 
 
+
+
+
+ 
+
 def register():
+    bpy.utils.register_class(ACTION_OT_actions)
+    bpy.utils.register_class(EDMVIS_UL_items)
+    bpy.utils.register_class(ACTION_PG_objectCollection)
+
     bpy.utils.register_class(BlenderEDMOptions)  
     bpy.utils.register_class(ExportEDMFile)
     bpy.types.TOPBAR_MT_file_export.append(menu_function_export)
@@ -79,6 +88,10 @@ def register():
     bpy.utils.register_class(ActionOptionPanel)
     bpy.utils.register_class(EDMMessageBox)
     bpy.utils.register_class(EDMBakeAction)
+    
+    bpy.types.Object.visanimation = bpy.props.CollectionProperty(type=ACTION_PG_objectCollection)
+    bpy.types.Object.visanimation_index = bpy.props.IntProperty()
+
 
 def unregister():
     bpy.utils.unregister_class(EDMBakeAction)
@@ -88,6 +101,13 @@ def unregister():
     bpy.utils.unregister_class(ExportEDMFile)
     bpy.utils.unregister_class(EDMMessageBox)
     
+    
+    bpy.utils.unregister_class(ACTION_OT_actions)
+    bpy.utils.unregister_class(EDMVIS_UL_items)
+    bpy.utils.unregister_class(ACTION_PG_objectCollection)
+        
+    del bpy.types.Object.visanimation
+    del bpy.types.Object.visanimation_index
 
 
 
