@@ -82,14 +82,19 @@ def edmbake(con):
                     else:
                         rotationkeyframedBones[b.name]=1
                         scalekeyframedBones[b.name]=1
-
+            
+            if c.type=='LIMIT_ROTATION' and not c.mute:
+                rotationkeyframedBones[b.name]=1   
+                
+            if c.type=='LIMIT_LOCATION' and not c.mute:
+                locationkeyframedBones[b.name]=1    
+            
             if (c.type=='TRACK_TO' 
                 or c.type=='LOCKED_TRACK' 
                 or c.type=='DAMPED_TRACK' 
                 or c.type=='TRANSFORM' 
                 or c.type=='COPY_TRANSFORMS' 
-                or c.type=='COPY_ROTATION'
-                or c.type=='LIMIT_ROTATION') and not c.mute:
+                or c.type=='COPY_ROTATION') and not c.mute:
                 if c.target!=None:
                     if c.target.type=='ARMATURE':
                         if c.subtarget!=None:
@@ -99,7 +104,6 @@ def edmbake(con):
             
             if (c.type=='COPY_LOCATION' 
                 or c.type=='TRANSFORM' 
-                or c.type=='LIMIT_LOCATION'
                 or c.type=='COPY_TRANSFORMS'
                 or c.type=='LIMIT_DISTANCE') and not c.mute:
                 if c.target!=None:
