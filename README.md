@@ -167,7 +167,8 @@ The Action Editor contains an additional panel. This is a bit hidden on the righ
 VisibilityNode
 --------------
 
-A VisibilityNode is the way to let an object appear oder disappear with an argument. This is the only thing which has to be animated on an object directly. Select the Object which should get a VisibilityNode in Object Mode.  Open dopesheet editor and switch to Action Editor. Create a new Action. Setup Export to EDM and argument. In Object Properties at Visibility there is a property named „Show in Renders“.  Move mouse over it, change the value as you need and press „I“ to insert a keyframe. Change frame and the value and repeat. To export the VisibilityNode the action has to kept in the animaton data of the object. The animation data of the object is independent of the animation data of the armature. 
+A VisibilityNode is the way to let an object appear oder disappear with an argument. This is the only thing which has to be animated on an object directly. Select the Object which should get a VisibilityNode in Object Mode. Open dopesheet editor and switch to Action Editor. Create a new Action. Setup Export to EDM and argument. In Object Properties at Visibility there is a property named „Show in Renders“.  Move mouse over it, change the value as you need and press „I“ to insert a keyframe. Change frame and the value and repeat. One can add multiple visibilty animation actions for one object.
+There is a list at the edm property panel. A click on + adds the active object animation action to the list. You can create a new action and add it also to the list. Every action in the list will be exported as a visibilty track although it may not be the active animation data of the action. export the VisibilityNode the action has to kept in the animaton data of the object. The animation data of the object is independent of the animation data of the armature. 
 
 Baking Animations
 -----------------
