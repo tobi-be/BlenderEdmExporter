@@ -45,7 +45,7 @@ What doesn‘t work:
 
 - Import EDM models
 - LOD Nodes
-- Export of modifiers
+- Export of modifiers (exception armature modifier which are used with skinnodes)
 
 Known issues
 ------------
@@ -54,7 +54,6 @@ Known issues
 - If you add animations or additional skinnodes the modelviewer has to be restarted to load the model properly.
 - In pose mode at bone properties at relations is an option named Relative Parenting. You should enable it. Otherwise objects will be exported at wrong positions.
 - Make shure the root bone is not deforming. Otherwise it will lead to an error when using skin nodes  (Edit mode-> Bone Properties-> Deform no)
-- Don't use seperation by selection or similar. This seems to mess up everything. Duplicate the object and remove everything you don't need.
 - Don't use fake user armatures.
 
 General Rules:
