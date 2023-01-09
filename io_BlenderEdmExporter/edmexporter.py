@@ -1464,17 +1464,20 @@ def hasMaterial(obj):
     else:
         return True
 
-def meshIsOk(obj):
+def meshIsOk(obj, warnings):
     me=obj.data
     if len(me.uv_layers)==0:
-        writeWarning("'{}' Mesh has no UV-Map. Mesh is not exported".format(obj.name))
+        if warnings:
+            writeWarning("'{}' Mesh has no UV-Map. Mesh is not exported".format(obj.name))
         return False
     if len(me.polygons) == 0:
-        writeWarning("Object '{}' does not contain polygons".format(obj.name))
+        if warnings:
+            writeWarning("Object '{}' does not contain polygons".format(obj.name))
         return False
     for p in me.polygons:
         if  len(p.vertices) != 4 and len(p.vertices) != 3:
-            writeWarning("'{}' is not a tri or quad. Mesh is not exported".format(obj.name))
+            if warnings:
+                writeWarning("'{}' is not a tri or quad. Mesh is not exported".format(obj.name))
             return False
     return True
 
@@ -1576,7 +1579,7 @@ def createEDMModel():
             edmmodel.rootNode.updateBoundingBox(c)
             type=c.EDMRenderType
         if type=='RenderNode':
-            if hasMaterial(c) and meshIsOk(c):
+            if hasMaterial(c) and meshIsOk(c, True):
                 r=RenderNode(c)
                 edmmodel.rootNode.materials.append(r.material)
             else:
@@ -1624,7 +1627,7 @@ def createEDMModel():
                 else:
                     writeWarning("Parent for '{}' is not found".format(c.name))
         if type=='SkinNode':
-            if hasMaterial(c) and meshIsOk(c):
+            if hasMaterial(c) and meshIsOk(c, True):
                 r=SkinNode(c,boneid)
                 edmmodel.rootNode.materials.append(r.material)
                 edmmodel.SkinNodes.append(r)
@@ -1797,14 +1800,8 @@ def prepareObjects():
     for c in bpy.data.objects:
         print(c.name)
         if c.type=='MESH' and not c.EDMRenderType=='SegmentsNode' and not c.EDMRenderType=='None':
-            calc_tan=True
-            if len(c.data.polygons) == 0:
-                continue
-            for p in c.data.polygons:
-                if  len(p.vertices) != 4 and len(p.vertices) != 3:
-                    calc_tan=False
-                    break
-            if len(c.data.uv_layers)>0 and calc_tan:
+            calc_tan=meshIsOk(c, False)
+            if calc_tan:
                 me =c.data
                 uv_layer = c.data.uv_layers[0].data
                 for poly in me.polygons:
@@ -1818,6 +1815,7 @@ def prepareObjects():
                 me.calc_normals()
                 me.calc_tangents(uvmap=c.data.uv_layers[0].name)
                 me.free_tangents()
+            
     bpy.context.view_layer.update()
     return True
 
