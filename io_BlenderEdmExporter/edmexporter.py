@@ -1469,6 +1469,9 @@ def meshIsOk(obj):
     if len(me.uv_layers)==0:
         writeWarning("'{}' Mesh has no UV-Map. Mesh is not exported".format(obj.name))
         return False
+    if len(me.polygons) == 0:
+        writeWarning("Object '{}' does not contain polygons".format(obj.name))
+        return False
     for p in me.polygons:
         if  len(p.vertices) != 4 and len(p.vertices) != 3:
             writeWarning("'{}' is not a tri or quad. Mesh is not exported".format(obj.name))
@@ -1795,6 +1798,8 @@ def prepareObjects():
         print(c.name)
         if c.type=='MESH' and not c.EDMRenderType=='SegmentsNode' and not c.EDMRenderType=='None':
             calc_tan=True
+            if len(c.data.polygons) == 0:
+                continue
             for p in c.data.polygons:
                 if  len(p.vertices) != 4 and len(p.vertices) != 3:
                     calc_tan=False
