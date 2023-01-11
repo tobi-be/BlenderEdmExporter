@@ -1495,11 +1495,16 @@ def createEDMModel():
         if i.type=='ARMATURE':
             if i.data.EDMArmatureExport:
                 armatures.append(i)
-    if len(armatures) !=1:
-        exportErrorStr = "Use one and only one armature! Not writing"
+    if len(armatures) >1:
+        exportErrorStr = "Use only one armature! Not writing. See readme"
         print(exportErrorStr)
         return None
-    armature=armatures[0]
+    if len(armatures) == 0:
+        exportErrorStr = "No armature found! Not writing. See readme"
+        print(exportErrorStr)
+        return None
+    #for armature in armatures:
+    armature = armatures[0]
     bones=armature.data.bones
     #create list of animated bones.
     actions=bpy.data.actions
@@ -1533,6 +1538,7 @@ def createEDMModel():
     #Transform from Blender Coords to DCS coords
     b=TransformNode(rootBone)#rootBone is just a Dummy to create the node
     b.matrix=  mathutils.Matrix.Rotation(-radians(90.0), 4, 'Z') @mathutils.Matrix.Rotation(-radians(90.0), 4, 'Y') @  mathutils.Matrix.Identity(4)
+    b.matrix = b.matrix @ armature.matrix_local
     b.parentid=nodeindex
     edmmodel.nodes.append(b)
     nodeindex+=1
@@ -1800,8 +1806,7 @@ def prepareObjects():
     for c in bpy.data.objects:
         print(c.name)
         if c.type=='MESH' and not c.EDMRenderType=='SegmentsNode' and not c.EDMRenderType=='None':
-            calc_tan=meshIsOk(c, False)
-            if calc_tan:
+            if meshIsOk(c, False):
                 me =c.data
                 uv_layer = c.data.uv_layers[0].data
                 for poly in me.polygons:
