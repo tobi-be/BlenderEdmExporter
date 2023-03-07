@@ -116,8 +116,8 @@ class EDMObjectPanel(bpy.types.Panel):
             box.prop(bpy.context.object, 'EDMRenderType')
             box.prop(bpy.context.object,'EDMTwoSides')
             type=bpy.context.object.EDMRenderType
+            showVisibility=True
             if type=='RenderNode' or type=='SkinNode':
-                showVisibility=True
                 materialBox=layout.box()
                 if len(context.object.material_slots)>0:
                     material=context.object.material_slots[0].material

@@ -54,6 +54,7 @@ def edmbake(con):
                                     rotationkeyframedBones[bp.name]=1
                                     if c.use_stretch:
                                         scalekeyframedBones[bp.name]=1
+                                    b=bp
                                         
             if c.type=='CLAMP_TO' and not c.mute:
                 if c.target!=None:
