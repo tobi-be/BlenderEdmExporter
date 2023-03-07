@@ -1106,7 +1106,10 @@ class RenderNode:
     gvBytes=0
     def __init__(self,obj):
         mesh = obj.data
-        self.name=obj.name
+        if obj.EDMAlternativeName == "":
+            self.name = obj.name
+        else:
+            self.name = obj.EDMAlternativeName
         self.type="model::RenderNode"
         self.PropertySet=[]
         self.unknown=0
@@ -1145,7 +1148,10 @@ class SkinNode:
         obj.select_set(True)
         
         mesh=obj.data
-        self.name=obj.name
+        if obj.EDMAlternativeName == "":
+            self.name = obj.name
+        else:
+            self.name = obj.EDMAlternativeName
         self.type="model::SkinNode"
         self.PropertySet=[]
         self.unknown=-1
@@ -1192,7 +1198,10 @@ class ShellNode:
     cvBytes=0
     def __init__(self,obj):
         mesh=obj.data
-        self.name=obj.name
+        if obj.EDMAlternativeName == "":
+            self.name = obj.name
+        else:
+            self.name = obj.EDMAlternativeName
         self.type="model::ShellNode"
         self.PropertySet=[]
         self.parentData=0
@@ -1219,7 +1228,10 @@ class SegmentsNode:
     cvBytes=0
     def __init__(self,obj):
         mesh=obj.data
-        self.name=obj.name
+        if obj.EDMAlternativeName == "":
+            self.name = obj.name
+        else:
+            self.name = obj.EDMAlternativeName
         self.type="model::SegmentsNode"
         self.PropertySet=[]
         self.parentData=0

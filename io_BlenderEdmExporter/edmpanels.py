@@ -112,6 +112,7 @@ class EDMObjectPanel(bpy.types.Panel):
                 colright2.prop(bpy.context.object.data,'EDMBoundingBoxMax')
         
         if context.object.type=='MESH':
+            box.prop(bpy.context.object,'EDMAlternativeName')
             box.prop(bpy.context.object, 'EDMRenderType')
             box.prop(bpy.context.object,'EDMTwoSides')
             type=bpy.context.object.EDMRenderType

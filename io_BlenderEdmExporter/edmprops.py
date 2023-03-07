@@ -29,6 +29,9 @@ class BlenderEDMOptions(bpy.types.PropertyGroup):
     bpy.types.Armature.EDMArmatureExport=bpy.props.BoolProperty(
         name="Export Armature",
         default=True)
+    bpy.types.Object.EDMAlternativeName=bpy.props.StringProperty(
+        name="Name",
+        default="")
     bpy.types.Object.EDMRenderType= bpy.props.EnumProperty(
         items = [('RenderNode', 'RenderNode', 'none deformed mesh'), 
                 ('SkinNode', 'SkinNode', 'Bone-defomed mesh'),
