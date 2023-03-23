@@ -1664,7 +1664,7 @@ def createEDMModel():
                 r.parentData=nodeindex
         if type=='SkinNode':
             fcus,arguments= getVisibilityFCurves(c)
-            if fcu !=None:
+            if fcus:
                 print("Skinvisivbility")
                 print(r.bones[0])
                 print(edmmodel.nodes[r.bones[0]].name)
