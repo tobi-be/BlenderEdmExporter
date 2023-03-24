@@ -141,7 +141,9 @@ Workflow to create a SkinNode would be:
 
 SkinNodes in DCS uses up to 4 bone weights per vertex. In Blender you have to limit the number of weights to 4 to get a proper export. This can be done in weight paint mode at weights→limit total. You have to assign a material to the mesh object. (this is just a dummy right now but it has to be done)
 There might be some problems with exporting Skinnodes. I would be happy about every  description of problems.
-If something is not working properly and you want to begin from scratch you should should delete the vertexgroups, which are created by using "parent with automatic weights"
+If something is not working properly and you want to begin from scratch you should should delete the vertexgroups, which are created by using "parent with automatic weights". 
+
+If you don't want to delete the vertex groups because you already put a lot of effort to weight painting you should make shure that there is a vertexgroup for each deforming bone (same name) and NO vertex groups for none deforming bones.
 
 Connectors
 ----------
