@@ -947,8 +947,8 @@ def createMesh(me, simple,twoside):
 
     if not simple:
         #print("Length UV layer: " +str(len(me.uv_layers)))
-        uv_layer = me.uv_layers[0].data
         me.calc_tangents(uvmap=me.uv_layers[0].name)
+        uv_layer = me.uv_layers.active.data
         #me.update(calc_edges=True, calc_edges_loose=True)
     vlist=[]
     for v in me.vertices:
