@@ -2,8 +2,8 @@ bl_info = {
     "name": "EDM-Exporter",
     "blender": (2, 82, 0),
     "category": "Import-Export",
-	"author": "Tobias Berkefeld",
-    "version": (1,0,9),
+	"author": "Tobsen",
+    "version": (1,0,11),
 }
 
 import bpy
