@@ -30,7 +30,7 @@ def writeInt(file, value):
     file.write(struct.pack("<i", value))
 
 def writeFloat(file, value):
-    file.write(struct.pack("<f", value))
+    file.write(struct.pack("<f", float(value)))
 
 def writeDouble(file, value):
     file.write(struct.pack("<d", value))
