@@ -69,6 +69,13 @@ Use always an armature even if you don't want to animate anything. This addon us
 The reason for the need of an armature goes back to the way of animations in blender:
 In Blender an armature offers the possibility to handle animations, which contains several bones in one action in the Action Editor. Each bone can be a parent for one or more objects. If you animate the objects directly instead, only one body could be animated in one action. Therefore it was decided that geometric animations (rotation and translation) are only considered and exported using bones. So do not animate objects directly! Always use an Armature. For simplicity in programming, an armature is also required for models without animations
 
+Auto rig objects
+-------------------
+
+To make some work easier there is a button "Auto Rig Object" in the EDM panel of an object. To use this function, there must already be an armature that is to be used for the export. 
+If you press the button, a bone is automatically created in the origin of the object and the object is parented to the bone. The bone gets the same orientation as the object. The bone gets the name of the object and becomes a child of the root bone of the armature. Of course you can parent the bone to any other bone afterwards. 
+If there is already a bone with the corresponding name, it will be repositioned to the object, keeping animations and former parent. So if you need to move objects you can use the button to update the bones. But you have to be careful never to apply the rotation and translation of the objects otherwise all bones will be set to (0,0,0) if you should press the button again.
+
 Use quaternions always
 ----------------------
 
