@@ -13,7 +13,7 @@ Be aware that this exporter is not thought to export downloaded models and have 
 Install:
 --------
 
-- Download io_BlenderEdmExporter.zip from asserts of the latest release. 
+- Download io_BlenderEdmExporter.zip from assets of the latest release. 
 - Blender: Go to Edit->Preferences->Add-Ons, press install and choose downloaded zip file 
 - Activate the add-on
 
