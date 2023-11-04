@@ -20,3 +20,5 @@ def parseAnimationPath(fcu):
         if path == "hide_render":
             return "Visibility", "", "Visibility"
     return None, None, None
+
+

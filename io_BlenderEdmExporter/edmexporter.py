@@ -134,6 +134,19 @@ def writeWarning(warning_str):
     warningStrs.append(warning_str)
 
 
+def get_animation_data(fcurves, datatype,a,b):
+    data = []
+    N=len(fcurves[0].keyframe_points)
+    for i in range(N):
+        q = datatype()
+        for fcu in fcurves:
+            q[fcu.array_index] = fcu.keyframe_points[i].co[1]
+            # range anpassen
+            frame = a+b*fcurves[0].keyframe_points[i].co[0]
+        data.append({"frame":frame, "value": q})
+    return data
+
+
 class EDMAnimationData:
     RotationData = 0
     PositionData = 0
@@ -324,6 +337,7 @@ class EDMMaterial:
         self.VertexFormat[3] = 0
 
         self.animatedSelfIlluminationData = None
+        self.animatedDiffuseValueData = None
         self.animatedDiffuseShiftData = None
         self.animatedNormalShiftData = None
         DiffuseShiftFcus = []
@@ -353,6 +367,29 @@ class EDMMaterial:
                             EDMMaterial.MaterialActionIndex = material.EDMSelfIlluminationArgument+1
                         self.animatedSelfIlluminationData = EDMAnimatedProperty(
                             "selfIlluminationValue", "model::AnimatedProperty<float>", EDMAnimationSet(material.EDMSelfIlluminationArgument, data, []))
+                        
+                    if fcu.data_path == "EDMDiffuseValue":
+                        ok = True
+                        # print("Selfillum gefunde")
+                        if action.EDMAutoRange:
+                            tMin, tMax = action.frame_range
+                        else:
+                            tMin = action.EDMStartFrame
+                            tMax = action.EDMEndFrame
+                        if tMin != tMax:
+                            b = 2.0/(tMax-tMin)
+                        else:
+                            b = 1
+                        a = -tMin*b-1.0
+                        data = []
+                        for points in fcu.keyframe_points:
+                            frame = a+b*points.co[0]  # range anpassen
+                            data.append(EDMAnimationData(frame, points.co[1]))
+                        if material.EDMSelfIlluminationArgument+1 > EDMMaterial.MaterialActionIndex:
+                            EDMMaterial.MaterialActionIndex = material.EDMDiffuseValueArgument+1
+                        self.animatedDiffuseValueData = EDMAnimatedProperty(
+                            "diffuseValue", "model::AnimatedProperty<float>", EDMAnimationSet(material.EDMDiffuseValueArgument, data, []))
+                        
                     if fcu.data_path == "EDMDiffuseShift":
                         ok = True
                         DiffuseShiftFcus.append(fcu)
@@ -658,8 +695,11 @@ class EDMMaterial:
             self.Blending = 3  # char
             self.shadows = 0
             self.DepthBias = 0
-            self.uniforms.append(EDMProperty(
-                "diffuseValue", "model::Property<float>", material.EDMDiffuseValue))
+            if self.animatedDiffuseValueData == None:
+                self.uniforms.append(EDMProperty(
+                    "diffuseValue", "model::Property<float>", material.EDMDiffuseValue))
+            else:
+                self.animatedUniforms.append(self.animatedDiffuseValueData)
             # self.uniforms.append(EDMProperty("diffuseShift", "model::Property<osg::Vec2f>" ,material.EDMDiffuseShift))
             self.uniforms.append(EDMProperty(
                 "banoDistCoefs", "model::Property<osg::Vec3f>", material.EDMBanoDistCoefs))
@@ -766,6 +806,7 @@ class TransformNode:
 
     def __init__(self, obj):
         TransformNode.N += 1
+        print(obj.name)
         self.name = obj.name+"transform"
         self.type = "model::TransformNode"
         if isinstance(obj, bpy.types.Bone) and obj.parent != None:
@@ -1670,11 +1711,52 @@ def meshIsOk(obj, warnings):
             return False
     return True
 
+def get_geometric_fcurves(l,propname):
+    fcurves = []
+    for fcu in l:
+        type, name, prop = parseAnimationPath(fcu)
+        if prop == propname:
+            known = True
+            fcurves.append(fcu)
+    return fcurves
+
+def get_rotation_fcurves(l):
+    fcurves = get_geometric_fcurves(l,"rotation_quaternion")
+    if len(fcurves) != 4:
+        if len(fcurves) != 0:
+            writeWarning(
+                "Incomplete rotation keyframes. Please use all four quaternionchannels")
+        fcurves = []
+    return fcurves
+
+def get_translation_fcurves(l):
+    fcurves = get_geometric_fcurves(l,"location")
+    if len(fcurves) != 3:
+        if len(fcurves) != 0:
+            writeWarning(
+                "Incomplete position keyframes. Please use all three positionchannels")
+        fcurves = []
+    return fcurves
+
+def get_scale_fcurves(l):
+    fcurves = get_geometric_fcurves(l,"scale")
+    if len(fcurves) != 3:
+        if len(fcurves) != 0:
+            writeWarning(
+                "Incomplete scale keyframes. Please use all three scalechannels")
+        fcurves = []
+    return fcurves
 
 def createEDMModel():
     resetData()
     # layer = bpy.context.view_layer
+    actionindex = 0
 
+    def update_actionindex(arg, actionindex):
+        if arg+1 > actionindex:
+            actionindex = arg+1
+        return actionindex
+    
     # layer.update()
     global warningStrs
     warningStrs = []
@@ -1766,7 +1848,6 @@ def createEDMModel():
         boneid[c.name] = nodeindex
     # Object Children
 
-    actionindex = 0
     children = []
     getAllChildren(armature, children)
     for c in children:
@@ -1836,8 +1917,8 @@ def createEDMModel():
                 v = VisibilityNode(r.parentData)
                 for i_fcu in range(len(fcus)):
                     v.addFCurve(arguments[i_fcu], fcus[i_fcu])
-                    if arguments[i_fcu]+1 >= actionindex:
-                        actionindex = arguments[i_fcu]+1
+                    actionindex = update_actionindex(arguments[i_fcu], actionindex)
+
                 edmmodel.nodes.append(v)
                 nodeindex += 1
                 boneid[c.name+"visibility"] = nodeindex
@@ -1852,8 +1933,7 @@ def createEDMModel():
                 v.name = c.name
                 for i_fcu in range(len(fcus)):
                     v.addFCurve(arguments[i_fcu], fcus[i_fcu])
-                    if arguments[i_fcu]+1 >= actionindex:
-                        actionindex = arguments[i_fcu]+1
+                    actionindex = update_actionindex(arguments[i_fcu], actionindex)
                 # print(actionindex)
                 edmmodel.nodes.append(v)
                 nodeindex += 1
@@ -1891,10 +1971,66 @@ def createEDMModel():
         else:
             tMin = action.EDMStartFrame
             tMax = action.EDMEndFrame
+        relative_keyframes = {"rot": {}, "loc":{},"scale":{}}
+        if action.EDMRelativeTo:
+            relative_action = action.EDMRelativeTo
+            relative_animatedbones = {}
+            for fcu in relative_action.fcurves:
+                type, name, prop = parseAnimationPath(fcu)
+                if type == "pose.bones":
+                    if bones[name].layers[0] == True:
+                        if name in relative_animatedbones:
+                            relative_animatedbones[name].append(fcu)
+                        else:
+                            relative_animatedbones[name] = [fcu]
+            for n, l in relative_animatedbones.items():
+                rotationfcurves = []
+                translationfcurves = []
+                scalefcurves = []
+                for fcu in l:
+                    type, name, prop = parseAnimationPath(fcu)
+                    known = False
+                    if prop == "rotation_quaternion":
+                        known = True
+                        rotationfcurves.append(fcu)
+                    if prop == "location":
+                        known = True
+                        translationfcurves.append(fcu)
+                    if prop == "scale":
+                        known = True
+                        scalefcurves.append(fcu)
+                    if known == False:
+                        writeWarning("unknown animationsargument "+prop)
+
+                if len(rotationfcurves) != 0:
+                    N = checkKeyframes(rotationfcurves)
+                    if N != None:
+                        animation_data = get_animation_data(rotationfcurves, mathutils.Quaternion, 0, 1)
+                        key_frame = animation_data[0]["value"]
+                        if not n in relative_keyframes["rot"]:
+                            relative_keyframes["rot"][n]=[]
+                        relative_keyframes["rot"][n].append(key_frame)
+                if len(translationfcurves) != 0:
+                    N = checkKeyframes(translationfcurves)
+                    if N != None:
+                        M = edmmodel.nodes[boneid[name]].Q1.to_matrix()
+                        animation_data = get_animation_data(translationfcurves, mathutils.Vector,0, 1)
+                        key_frame = animation_data[0]["value"]
+                        if not n in relative_keyframes["loc"]:
+                            relative_keyframes["loc"][n]=[]
+                        relative_keyframes["loc"][n].append(M @ key_frame)
+                if len(scalefcurves) != 0:
+                    N = checkKeyframes(scalefcurves)
+                    if N != None:
+                        animation_data = get_animation_data(scalefcurves, mathutils.Vector, 0, 1)
+                        key_frame = animation_data[0]["value"]
+                        if not n in relative_keyframes["scale"]:
+                            relative_keyframes["scale"][n]=[]
+                        relative_keyframes["scale"][n].append(key_frame)
+        
         b = 2.0/(tMax-tMin)
         a = -tMin*b-1.0
-        # print(tMin)
-        # print(tMax)
+        
         animatedbones = {}
         for fcu in action.fcurves:
             type, name, prop = parseAnimationPath(fcu)
@@ -1908,6 +2044,7 @@ def createEDMModel():
                 if type != 'Visibility':
                     writeWarning(
                         "'{}' - Animation are not supported".format(type))
+                    
         for n, l in animatedbones.items():
             rotationfcurves = []
             translationfcurves = []
@@ -1926,72 +2063,55 @@ def createEDMModel():
                     scalefcurves.append(fcu)
                 if known == False:
                     writeWarning("unknown animationsargument "+prop)
+            
 
-            if len(rotationfcurves) != 4:
-                if len(rotationfcurves) != 0:
-                    writeWarning(
-                        "Incomplete rotation keyframes. Please use all four quaternionchannels")
-            else:
+            if len(rotationfcurves) != 0:
                 N = checkKeyframes(rotationfcurves)
                 if N != None:
+                    animation_data = get_animation_data(rotationfcurves, mathutils.Quaternion, a, b)
+                    
+                    M = mathutils.Quaternion([1.0,0.0,0.0,0.0]).to_matrix()
+                    if n in relative_keyframes["rot"]:
+                        for o in relative_keyframes["rot"][n]:
+                            M = M @ o.to_matrix()
+                        M.invert()
                     data = []
-                    for i in range(N):
-                        q = mathutils.Quaternion()
-                        for fcu in rotationfcurves:
-                            q[fcu.array_index] = fcu.keyframe_points[i].co[1]
-                        # range anpassen
-                        frame = a+b*rotationfcurves[0].keyframe_points[i].co[0]
-                        data.append(EDMAnimationData(frame, q))
+                    for d in animation_data:
+                        data.append(EDMAnimationData(d["frame"], (M @ d["value"].to_matrix()).to_quaternion()))
                     edmmodel.nodes[boneid[name]].rotationAnimations.append(
                         EDMAnimationSet(action.animationArgument, data, []))
-                    if action.animationArgument+1 > actionindex:
-                        actionindex = action.animationArgument+1
-
-            if len(translationfcurves) != 3:
-                if len(translationfcurves) != 0:
-                    writeWarning(
-                        "Incomplete position keyframes. Please use all three positionchannels")
-            else:
+                    actionindex = update_actionindex(action.animationArgument, actionindex)
+                
+            if len(translationfcurves) != 0:
                 N = checkKeyframes(translationfcurves)
                 if N != None:
-                    data = []
                     M = edmmodel.nodes[boneid[name]].Q1.to_matrix()
-                    for i in range(N):
-                        q = mathutils.Vector([0, 0, 0])
-                        for fcu in translationfcurves:
-                            q[fcu.array_index] = fcu.keyframe_points[i].co[1]
-                        frame = a+b * \
-                            translationfcurves[0].keyframe_points[i].co[0]
-                        v = M @ q
-                        data.append(EDMAnimationData(frame, v))
-                    # print("     " +name+" " +str(boneid[name]))
+                    animation_data = get_animation_data(translationfcurves, mathutils.Vector, a, b)
+                    data = []
+                    offset = mathutils.Vector()
+                    if n in relative_keyframes["loc"]:
+                        for o in relative_keyframes["loc"][n]:
+                            offset = offset + o
+                    for d in animation_data:
+                        data.append(EDMAnimationData(d["frame"], (M @ d["value"])-offset))
                     edmmodel.nodes[boneid[name]].positionAnimations.append(
                         EDMAnimationSet(action.animationArgument, data, []))
-                    if action.animationArgument+1 > actionindex:
-                        actionindex = action.animationArgument+1
+                    actionindex = update_actionindex(action.animationArgument, actionindex)
 
-            if len(scalefcurves) != 3:
-                if len(scalefcurves) != 0:
-                    writeWarning(
-                        "Incomplete scale keyframes. Please use all three scalechannels")
-            else:
+            if len(scalefcurves) != 0:
                 N = checkKeyframes(scalefcurves)
                 if N != None:
+                    animation_data = get_animation_data(scalefcurves, mathutils.Vector, a, b)
                     data = []
-                    for i in range(N):
-                        q = mathutils.Vector([0, 0, 0])
-                        for fcu in scalefcurves:
-                            q[fcu.array_index] = fcu.keyframe_points[i].co[1]
-                        # range anpassen
-                        frame = a+b*scalefcurves[0].keyframe_points[i].co[0]
-                        data.append(EDMAnimationData(frame, q))
+                    for d in animation_data:
+                        data.append(EDMAnimationData(d["frame"], d["value"]))
                     data2 = []
                     data2.append(EDMAnimationData(
                         0, mathutils.Quaternion([1.0, 0.0, 0.0, 0.0])))
                     edmmodel.nodes[boneid[name]].scaleAnimations.append(
                         EDMAnimationSet(action.animationArgument, data2, data))
-                    if action.animationArgument+1 > actionindex:
-                        actionindex = action.animationArgument+1
+                    actionindex = update_actionindex(action.animationArgument, actionindex)
+                    
     if armature.data.EDMAutoCalcBoxes:
         edmmodel.rootNode.UserMin = edmmodel.rootNode.BoundingMin
         edmmodel.rootNode.UserMax = edmmodel.rootNode.BoundingMax

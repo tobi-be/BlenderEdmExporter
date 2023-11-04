@@ -1,5 +1,7 @@
 import bpy
 
+def filter_callback(self, object):
+    return True
 
 class ACTION_PG_objectCollection(bpy.types.PropertyGroup):
     # name: StringProperty() -> Instantiated by default
@@ -184,6 +186,10 @@ class BlenderEDMOptions(bpy.types.PropertyGroup):
         name="Animation Argument",
         default=0,
         min=0)
+    bpy.types.Material.EDMDiffuseValueArgument = bpy.props.IntProperty(
+        name="Animation Argument",
+        default=0,
+        min=0)
     bpy.types.Material.EDMIlluminationColor = bpy.props.FloatVectorProperty(
         name="Illumination Color",
         default=(1.0, 1.0, 1.0),
@@ -282,3 +288,8 @@ class BlenderEDMOptions(bpy.types.PropertyGroup):
         name="Animation Argument",
         default=0,
         min=0)
+    bpy.types.Action.EDMRelativeTo = bpy.props.PointerProperty(
+        name="Relative to",
+        type=bpy.types.Action,
+        poll=filter_callback
+    )

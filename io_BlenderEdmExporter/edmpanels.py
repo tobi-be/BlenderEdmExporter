@@ -295,6 +295,7 @@ class EDMObjectPanel(bpy.types.Panel):
                         col.label(text="Diffuse colormap:")
                         col.prop(material, 'EDMDiffuseMapName')
                         col.prop(material, 'EDMDiffuseValue')
+                        col.prop(material, 'EDMDiffuseValueArgument')
                         col.prop(material, 'EDMBanoDistCoefs')
                         col.prop(material, 'EDMDiffuseShift')
                         # col = materialBox.column(align = True)
@@ -397,6 +398,7 @@ class ActionOptionPanel(bpy.types.Panel):
             col.prop(context.object.animation_data.action, 'animationArgument')
             col = box.column(align=True)
             col.prop(context.object.animation_data.action, 'EDMAutoRange')
+            col.prop(context.object.animation_data.action, 'EDMRelativeTo')
             if not context.object.animation_data.action.EDMAutoRange:
                 row = col.row(align=True)
                 row.prop(context.object.animation_data.action, 'EDMStartFrame')
