@@ -1313,6 +1313,7 @@ class RenderNode:
         self.tris = tris
         self.sourcematerial = obj.material_slots[0].material
         self.parentDataDamageArg = -1
+        print(obj.name)
         if self.sourcematerial.EDMUseDamageMap:
             self.parentDataDamageArg = obj.EDMDamageArgument
         self.material = EDMMaterial(self.sourcematerial, False)
@@ -2073,11 +2074,11 @@ def createEDMModel():
                     M = mathutils.Quaternion([1.0,0.0,0.0,0.0]).to_matrix()
                     if n in relative_keyframes["rot"]:
                         for o in relative_keyframes["rot"][n]:
-                            M = M @ o.to_matrix()
+                            M = o.to_matrix()
                         M.invert()
                     data = []
                     for d in animation_data:
-                        data.append(EDMAnimationData(d["frame"], (M @ d["value"].to_matrix()).to_quaternion()))
+                        data.append(EDMAnimationData(d["frame"], (d["value"].to_matrix() @ M ).to_quaternion()))
                     edmmodel.nodes[boneid[name]].rotationAnimations.append(
                         EDMAnimationSet(action.animationArgument, data, []))
                     actionindex = update_actionindex(action.animationArgument, actionindex)
