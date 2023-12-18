@@ -1121,7 +1121,7 @@ class EDMVertex:
 def createMesh(me, simple, twoside):
     newverts = []
     tris = []
-    me.calc_normals()
+    #me.calc_normals()
 
     if not simple:
         # print("Length UV layer: " +str(len(me.uv_layers)))
@@ -2078,7 +2078,7 @@ def createEDMModel():
                         M.invert()
                     data = []
                     for d in animation_data:
-                        data.append(EDMAnimationData(d["frame"], (d["value"].to_matrix() @ M ).to_quaternion()))
+                        data.append(EDMAnimationData(d["frame"], (M @ d["value"].to_matrix()  ).to_quaternion()))
                     edmmodel.nodes[boneid[name]].rotationAnimations.append(
                         EDMAnimationSet(action.animationArgument, data, []))
                     actionindex = update_actionindex(action.animationArgument, actionindex)
@@ -2150,7 +2150,7 @@ def prepareObjects():
                         normal = me.loops[loop_index].normal
                         uv = mathutils.Vector(
                             [uv_layer[loop_index].uv[0], 1.0-uv_layer[loop_index].uv[1]])  # uv
-                me.calc_normals()
+                #me.calc_normals()
                 me.calc_tangents(uvmap=c.data.uv_layers[0].name)
                 me.free_tangents()
 

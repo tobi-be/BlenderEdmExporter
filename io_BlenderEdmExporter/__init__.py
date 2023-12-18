@@ -54,7 +54,7 @@ class ExportEDMFile(bpy.types.Operator, ExportHelper):
         # logfile.write("Log EDM-Export")
         if not len(bpy.context.selected_objects) == 0:
             bpy.ops.object.mode_set(mode='OBJECT')
-        prepareObjects()
+        #prepareObjects()
         edmmodel = createEDMModel()
         resultVal = {'CANCELLED'}
         if edmmodel != None:
