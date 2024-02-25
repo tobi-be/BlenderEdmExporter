@@ -7,6 +7,8 @@ from .edmpanels import *
 from .edmexporter import *
 from bpy_extras.io_utils import ExportHelper
 import bpy
+from bpy.props import BoolProperty
+
 bl_info = {
     "name": "EDM-Exporter",
     "blender": (2, 82, 0),
@@ -49,13 +51,25 @@ class ExportEDMFile(bpy.types.Operator, ExportHelper):
         maxlen=255,  # Max internal buffer length, longer would be clamped.
     )
 
+    skip_collision: BoolProperty(
+        name="Skip collision",
+        description="Export without Collision objects",
+        default=False,
+    )
+
+    skip_render: BoolProperty(
+        name="Skip Render",
+        description="Export without Render objects",
+        default=False,
+    )
+
     def execute(self, context):
         # logfile = open("D:/edm/logfile.txt", "w")
         # logfile.write("Log EDM-Export")
         if not len(bpy.context.selected_objects) == 0:
             bpy.ops.object.mode_set(mode='OBJECT')
         #prepareObjects()
-        edmmodel = createEDMModel()
+        edmmodel = createEDMModel(not self.skip_render, not self.skip_collision)
         resultVal = {'CANCELLED'}
         if edmmodel != None:
             edmmodel.write(self.filepath)

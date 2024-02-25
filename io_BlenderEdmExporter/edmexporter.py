@@ -1748,7 +1748,7 @@ def get_scale_fcurves(l):
         fcurves = []
     return fcurves
 
-def createEDMModel():
+def createEDMModel(export_render, export_collision):
     resetData()
     # layer = bpy.context.view_layer
     actionindex = 0
@@ -1858,24 +1858,36 @@ def createEDMModel():
             edmmodel.rootNode.updateBoundingBox(c)
             type = c.EDMRenderType
         if type == 'RenderNode':
+            if not export_render:
+                continue
             if hasMaterial(c) and meshIsOk(c, True):
                 r = RenderNode(c)
                 edmmodel.rootNode.materials.append(r.material)
             else:
                 continue
         if type == 'FakeOmniLight':
+            if not export_render:
+                continue
             r = FakeOmniLightNode(c)
             edmmodel.rootNode.materials.append(r.material)
         if type == 'ShellNode':
+            if not export_collision:
+                continue
             r = ShellNode(c)
             edmmodel.rootNode.updateBoundingBox(c)
         if type == 'SegmentsNode':
+            if not export_collision:
+                continue
             r = SegmentsNode(c)
             edmmodel.rootNode.updateBoundingBox(c)
         if type == 'Connector':
+            if not export_render:
+                continue
             r = ConnectorNode(c)
             edmmodel.rootNode.updateBoundingBox(c)
         if type == 'Light':
+            if not export_render:
+                continue
             r = EDMLight(c)
             edmmodel.rootNode.updateBoundingBox(c)
         if type == 'RenderNode' or type == 'ShellNode' or type == 'SegmentsNode' or type == 'Connector' or type == 'FakeOmniLight' or type == 'Light':
@@ -1907,6 +1919,8 @@ def createEDMModel():
                 else:
                     writeWarning("Parent for '{}' is not found".format(c.name))
         if type == 'SkinNode':
+            if not export_render:
+                continue
             if hasMaterial(c) and meshIsOk(c, True):
                 r = SkinNode(c, boneid)
                 edmmodel.rootNode.materials.append(r.material)
