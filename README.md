@@ -20,6 +20,8 @@ Install:
 Usefull links:
 ----------------
 
+Simple Export: https://youtu.be/SwrVcOZygns?si=lXYt0O-9iqWsyqw-
+
 Tutorialplaylist: https://www.youtube.com/playlist?list=PLj_mUHDsU9x7hARVZsA1JilXWnTxJ4PpD  thanks Grajo!
 
 DCS Forum about the exporter: https://forums.eagle.ru/showthread.php?t=268003 
