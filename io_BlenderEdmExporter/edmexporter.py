@@ -1987,7 +1987,7 @@ def createEDMModel(export_render, export_collision):
             tMin = action.EDMStartFrame
             tMax = action.EDMEndFrame
         relative_keyframes = {"rot": {}, "loc":{},"scale":{}}
-        if action.EDMRelativeTo:
+        if action.EDMRelativeTo is not None:
             relative_action = action.EDMRelativeTo
             relative_animatedbones = {}
             for fcu in relative_action.fcurves:
@@ -2042,7 +2042,8 @@ def createEDMModel(export_render, export_collision):
                         if not n in relative_keyframes["scale"]:
                             relative_keyframes["scale"][n]=[]
                         relative_keyframes["scale"][n].append(key_frame)
-        
+        else:
+            relative_keyframes = {"rot": {}, "loc":{},"scale":{}}
         b = 2.0/(tMax-tMin)
         a = -tMin*b-1.0
         
